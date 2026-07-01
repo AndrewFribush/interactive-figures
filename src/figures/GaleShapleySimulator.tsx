@@ -104,7 +104,7 @@ function* galeShapley(scenario: Scenario): Generator<StepResult> {
           proposer: p,
           receiver: r,
           round,
-          message: `${scenario.proposers[p].name} proposes to ${scenario.receivers[r].name} — accepted!`,
+          message: `${scenario.proposers[p].name} proposes to ${scenario.receivers[r].name}, accepted!`,
         };
       } else {
         const currentRank = receiverPrefs.indexOf(currentMatch);
@@ -120,7 +120,7 @@ function* galeShapley(scenario: Scenario): Generator<StepResult> {
             receiver: r,
             replaced: currentMatch,
             round,
-            message: `${scenario.proposers[p].name} proposes to ${scenario.receivers[r].name} — accepted! ${scenario.proposers[currentMatch].name} is now free.`,
+            message: `${scenario.proposers[p].name} proposes to ${scenario.receivers[r].name}, accepted! ${scenario.proposers[currentMatch].name} is now free.`,
           };
         } else {
           yield {
@@ -128,7 +128,7 @@ function* galeShapley(scenario: Scenario): Generator<StepResult> {
             proposer: p,
             receiver: r,
             round,
-            message: `${scenario.proposers[p].name} proposes to ${scenario.receivers[r].name} — rejected.`,
+            message: `${scenario.proposers[p].name} proposes to ${scenario.receivers[r].name}, rejected.`,
           };
         }
       }
@@ -959,7 +959,7 @@ export const GaleShapleySimulator: React.FC = () => {
           <div className="space-y-3">
             <div>
               <div className="flex justify-between text-[0.8125rem] mb-1">
-                <span style={{ color: proposerSide === 'men' ? '#c4915c' : '#9a8abf' }}>{proposerLabel} (Proposers) — avg choice: <strong>{state.matches.size > 0 ? `#${proposerAvgRank.toFixed(1)}` : '—'}</strong></span>
+                <span style={{ color: proposerSide === 'men' ? '#c4915c' : '#9a8abf' }}>{proposerLabel} (Proposers), avg choice: <strong>{state.matches.size > 0 ? `#${proposerAvgRank.toFixed(1)}` : ', '}</strong></span>
                 <span style={{ color: 'var(--text-secondary)' }}>{state.matches.size > 0 ? `${Math.round(((n + 1 - proposerAvgRank) / n) * 100)}% satisfaction` : ''}</span>
               </div>
               <div className="gs-progress-track">
@@ -968,7 +968,7 @@ export const GaleShapleySimulator: React.FC = () => {
             </div>
             <div>
               <div className="flex justify-between text-[0.8125rem] mb-1">
-                <span style={{ color: receiverSide === 'women' ? '#9a8abf' : '#c4915c' }}>{receiverLabel} (Receivers) — avg choice: <strong>{state.matches.size > 0 ? `#${receiverAvgRank.toFixed(1)}` : '—'}</strong></span>
+                <span style={{ color: receiverSide === 'women' ? '#9a8abf' : '#c4915c' }}>{receiverLabel} (Receivers), avg choice: <strong>{state.matches.size > 0 ? `#${receiverAvgRank.toFixed(1)}` : ', '}</strong></span>
                 <span style={{ color: 'var(--text-secondary)' }}>{state.matches.size > 0 ? `${Math.round(((n + 1 - receiverAvgRank) / n) * 100)}% satisfaction` : ''}</span>
               </div>
               <div className="gs-progress-track">
@@ -995,7 +995,7 @@ export const GaleShapleySimulator: React.FC = () => {
           color: 'var(--text-secondary)',
           lineHeight: 1.6,
         }}>
-          This run went against the theory — with only 10 people and random preferences, there&apos;s roughly a 17% chance the proposers end up with worse average ranks than the receivers. The gap is real but small at this scale. Hit <strong style={{ color: 'var(--text-primary)' }}>Reset</strong> to try again, or keep reading for the 100-person version where it&apos;s unmistakable.
+          This run went against the theory, with only 10 people and random preferences, there&apos;s roughly a 17% chance the proposers end up with worse average ranks than the receivers. The gap is real but small at this scale. Hit <strong style={{ color: 'var(--text-primary)' }}>Reset</strong> to try again, or keep reading for the 100-person version where it&apos;s unmistakable.
         </div>
       )}
 
