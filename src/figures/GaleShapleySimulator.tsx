@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useReducer, useRef, useCallback, useEffect, useState, useMemo } from 'react';
+import { figParamKey, useFigUrlState } from '@/app/components/figures/useFigUrlState';
 
 // --- Types ---
 
@@ -230,7 +231,7 @@ function stateColor(s: PersonState): string {
   switch (s) {
     case 'proposing': return '#5e9ec2';
     case 'considering': return '#c49a6c';
-    case 'matched': return '#d4a853';
+    case 'matched': return '#101418';
     case 'rejected': return '#c86666';
     default: return '#8a8580';
   }
@@ -238,7 +239,7 @@ function stateColor(s: PersonState): string {
 
 function rankColor(rank: number, total: number): string {
   const ratio = rank / total;
-  if (ratio <= 0.3) return '#d4a853';
+  if (ratio <= 0.3) return '#101418';
   if (ratio <= 0.6) return '#c49a6c';
   return '#c86666';
 }
@@ -246,7 +247,15 @@ function rankColor(rank: number, total: number): string {
 // --- Component ---
 
 export const GaleShapleySimulator: React.FC = () => {
+  const [sharedMode, writeMode] = useFigUrlState(figParamKey('2.1.1', 'mode'));
   const [proposalMode, setProposalMode] = useState<'men' | 'women'>('men');
+  // Applied post-mount: SSR renders the default (hydration safety).
+  useEffect(() => {
+    if (sharedMode === 'women') setProposalMode('women');
+  }, [sharedMode]);
+  useEffect(() => {
+    writeMode(proposalMode === 'men' ? null : proposalMode);
+  }, [proposalMode, writeMode]);
   const [baseScenario, setBaseScenario] = useState(() => generateScenario());
   const scenario = useMemo(
     () => proposalMode === 'men'
@@ -385,11 +394,11 @@ export const GaleShapleySimulator: React.FC = () => {
   ) => {
     const color = stateColor(personState);
     const dim = size === 'sm' ? 28 : 36;
-    const fontSize = size === 'sm' ? 11 : 13;
+    const fontSize = size === 'sm' ? 12 : 13;
     const isActive = personState !== 'idle';
     const ringGradient = side === 'men'
-      ? 'linear-gradient(135deg, #c4915c, #d4a853)'
-      : 'linear-gradient(135deg, #9a8abf, #b07aab)';
+      ? '#0f8040'
+      : '#b3501d';
 
     return (
       <div className="gs-avatar" style={{ width: dim, height: dim }}>
@@ -421,8 +430,8 @@ export const GaleShapleySimulator: React.FC = () => {
           to { transform: translateX(0); opacity: 1; }
         }
         @keyframes gs-pulse-glow {
-          0%, 100% { box-shadow: 0 0 6px rgba(212,168,83,0.25); }
-          50% { box-shadow: 0 0 14px rgba(212,168,83,0.5); }
+          0%, 100% { box-shadow: 0 0 6px rgba(18,161,80,0.25); }
+          50% { box-shadow: 0 0 14px rgba(18,161,80,0.45); }
         }
         .gs-badge-enter { animation: gs-slide-in 0.25s ease-out both; }
         .gs-match-glow { animation: gs-pulse-glow 2.5s ease-in-out infinite; }
@@ -430,15 +439,12 @@ export const GaleShapleySimulator: React.FC = () => {
         /* Container */
         .gs-container {
           position: relative;
-          border: 1px solid var(--border);
-          border-radius: 0.75rem;
+          border: none;
+          border-radius: 0;
           padding: 1.25rem;
-          margin: 2rem 0;
+          margin: 0;
           overflow: hidden;
-          background:
-            radial-gradient(ellipse at 15% 50%, rgba(196,145,92,0.05) 0%, transparent 60%),
-            radial-gradient(ellipse at 85% 50%, rgba(154,138,191,0.05) 0%, transparent 60%),
-            var(--bg-tertiary);
+          background: var(--bg-primary);
         }
         @media (min-width: 640px) {
           .gs-container { padding: 1.5rem; }
@@ -448,7 +454,7 @@ export const GaleShapleySimulator: React.FC = () => {
         .gs-btn {
           padding: 0.5rem 0.875rem;
           font-size: 0.875rem;
-          border-radius: 0.5rem;
+          border-radius: 3px;
           border: 1px solid var(--border);
           transition: all 0.15s;
           cursor: pointer;
@@ -501,7 +507,7 @@ export const GaleShapleySimulator: React.FC = () => {
           align-items: center;
           gap: 0.625rem;
           padding: 0 0.5rem;
-          border-radius: 0.5rem;
+          border-radius: 3px;
           cursor: pointer;
           transition: all 0.2s;
         }
@@ -553,7 +559,7 @@ export const GaleShapleySimulator: React.FC = () => {
           align-items: center;
           gap: 0.5rem;
           padding: 0.5rem 0.75rem;
-          border-radius: 0.5rem;
+          border-radius: 3px;
           border: 1px solid var(--border);
           transition: all 0.3s;
           cursor: pointer;
@@ -563,17 +569,42 @@ export const GaleShapleySimulator: React.FC = () => {
         .gs-panel {
           background: var(--bg-secondary);
           border: 1px solid var(--border);
-          border-radius: 0.5rem;
+          border-radius: 3px;
         }
         .gs-prefs-panel {
           margin-top: 0.75rem;
           padding: 0.625rem 0.875rem;
           font-size: 0.8125rem;
           color: var(--text-secondary);
+          height: 3.5rem;
+          overflow-y: auto;
         }
         .gs-quality-panel {
           margin-top: 1rem;
           padding: 1rem;
+        }
+        .gs-quality-row {
+          display: flex;
+          justify-content: space-between;
+          flex-wrap: wrap;
+          align-content: flex-start;
+          font-size: 0.8125rem;
+          margin-bottom: 0.25rem;
+        }
+        .gs-quality-row > span { white-space: nowrap; }
+        .gs-quality-note {
+          font-size: 0.8125rem;
+          color: var(--text-secondary);
+          margin-top: 0.75rem;
+          line-height: 1.7;
+          height: 12.5rem;
+          overflow-y: auto;
+        }
+        @media (max-width: 639px) {
+          .gs-quality-row { min-height: 44px; }
+        }
+        @media (min-width: 640px) {
+          .gs-quality-note { height: 6.5rem; }
         }
 
         /* Progress bars */
@@ -595,7 +626,7 @@ export const GaleShapleySimulator: React.FC = () => {
           padding-top: 0.75rem;
         }
         .gs-log-entries {
-          max-height: 16rem;
+          height: 16rem;
           overflow-y: auto;
           font-size: 0.8125rem;
           font-family: monospace;
@@ -678,7 +709,7 @@ export const GaleShapleySimulator: React.FC = () => {
 
       {/* Controls */}
       <div className="flex flex-wrap items-center gap-3 mb-5">
-        <div style={{ display: 'flex', borderRadius: '0.5rem', border: '1px solid var(--border)', overflow: 'hidden' }}>
+        <div style={{ display: 'flex', borderRadius: '3px', border: '1px solid var(--border)', overflow: 'hidden' }}>
           <button
             onClick={() => setProposalMode('men')}
             className="gs-btn"
@@ -722,7 +753,7 @@ export const GaleShapleySimulator: React.FC = () => {
           ['Idle', '#8a8580'],
           ['Proposing', '#5e9ec2'],
           ['Considering', '#c49a6c'],
-          ['Matched', '#d4a853'],
+          ['Matched', '#101418'],
           ['Rejected', '#c86666'],
         ] as [string, string][]).map(([label, color]) => (
           <span key={label} className="gs-legend-item">
@@ -759,7 +790,7 @@ export const GaleShapleySimulator: React.FC = () => {
                 </div>
               );
             })}
-            <div style={{ textAlign: 'center', fontSize: '0.8125rem', color: proposerSide === 'men' ? '#c4915c' : '#9a8abf', marginTop: '0.25rem', fontWeight: 500 }}>
+            <div style={{ textAlign: 'center', fontSize: '0.8125rem', color: proposerSide === 'men' ? '#0f8040' : '#b3501d', marginTop: '0.25rem', fontWeight: 500 }}>
               {state.matches.size > 0 ? `Avg rank: #${(proposalMode === 'men' ? menAvgRank : womenAvgRank).toFixed(1)}` : '\u00A0'}
             </div>
           </div>
@@ -817,7 +848,7 @@ export const GaleShapleySimulator: React.FC = () => {
                 </div>
               );
             })}
-            <div style={{ textAlign: 'center', fontSize: '0.8125rem', color: receiverSide === 'women' ? '#9a8abf' : '#c4915c', marginTop: '0.25rem', fontWeight: 500 }}>
+            <div style={{ textAlign: 'center', fontSize: '0.8125rem', color: receiverSide === 'women' ? '#b3501d' : '#0f8040', marginTop: '0.25rem', fontWeight: 500 }}>
               {state.matches.size > 0 ? `Avg rank: #${(proposalMode === 'men' ? womenAvgRank : menAvgRank).toFixed(1)}` : '\u00A0'}
             </div>
           </div>
@@ -843,23 +874,24 @@ export const GaleShapleySimulator: React.FC = () => {
                     onClick={(e) => togglePrefs(`p-${i}`, e)}
                   >
                     {renderAvatar(p.name[0], pState, proposerSide, 'sm')}
-                    <div className="min-w-0">
+                    <div className="min-w-0 flex-1">
                       <div className="text-sm font-medium truncate" style={{ color: (pState === 'proposing' || pState === 'considering' || pState === 'rejected') ? stateColor(pState) : 'var(--text-primary)' }}>
                         {p.name}
                       </div>
-                      {matchR !== undefined && (() => {
-                        const rank = p.preferences.indexOf(matchR) + 1;
-                        return <div className="text-xs" style={{ color: rankColor(rank, n) }}>{'\u2192'} {scenario.receivers[matchR].name} <span className="font-mono">#{rank}</span></div>;
-                      })()}
-                      {state.activeProposal?.proposer === i && (
-                        <div className="text-xs" style={{ color: '#5e9ec2' }}>{'\u2192'} {scenario.receivers[state.activeProposal.receiver].name}?</div>
-                      )}
+                      <div className="text-xs truncate" style={{ height: '1rem' }}>
+                        {state.activeProposal?.proposer === i ? (
+                          <span style={{ color: '#5e9ec2' }}>{'\u2192'} {scenario.receivers[state.activeProposal.receiver].name}?</span>
+                        ) : matchR !== undefined ? (() => {
+                          const rank = p.preferences.indexOf(matchR) + 1;
+                          return <span style={{ color: rankColor(rank, n) }}>{'\u2192'} {scenario.receivers[matchR].name} <span className="font-mono">#{rank}</span></span>;
+                        })() : '\u00a0'}
+                      </div>
                     </div>
                   </div>
                 );
               })}
             </div>
-            <div style={{ textAlign: 'center', fontSize: '0.8125rem', color: proposerSide === 'men' ? '#c4915c' : '#9a8abf', marginTop: '0.375rem', fontWeight: 500 }}>
+            <div style={{ textAlign: 'center', fontSize: '0.8125rem', color: proposerSide === 'men' ? '#0f8040' : '#b3501d', marginTop: '0.375rem', fontWeight: 500 }}>
               {state.matches.size > 0 ? `Avg rank: #${(proposalMode === 'men' ? menAvgRank : womenAvgRank).toFixed(1)}` : '\u00A0'}
             </div>
           </div>
@@ -881,33 +913,40 @@ export const GaleShapleySimulator: React.FC = () => {
                     onClick={(e) => togglePrefs(`r-${j}`, e)}
                   >
                     {renderAvatar(r.name[0], rState, receiverSide, 'sm')}
-                    <div className="min-w-0">
+                    <div className="min-w-0 flex-1">
                       <div className="text-sm font-medium truncate" style={{ color: (rState === 'proposing' || rState === 'considering' || rState === 'rejected') ? stateColor(rState) : 'var(--text-primary)' }}>
                         {r.name}
                       </div>
-                      {matchP !== undefined && (() => {
-                        const rank = r.preferences.indexOf(matchP) + 1;
-                        return <div className="text-xs" style={{ color: rankColor(rank, n) }}>{'\u2190'} {scenario.proposers[matchP].name} <span className="font-mono">#{rank}</span></div>;
-                      })()}
-                      {state.activeProposal?.receiver === j && (
-                        <div className="text-xs" style={{ color: '#c49a6c' }}>{'\u2190'} {scenario.proposers[state.activeProposal.proposer].name}?</div>
-                      )}
+                      <div className="text-xs truncate" style={{ height: '1rem' }}>
+                        {state.activeProposal?.receiver === j ? (
+                          <span style={{ color: '#c49a6c' }}>{'\u2190'} {scenario.proposers[state.activeProposal.proposer].name}?</span>
+                        ) : matchP !== undefined ? (() => {
+                          const rank = r.preferences.indexOf(matchP) + 1;
+                          return <span style={{ color: rankColor(rank, n) }}>{'\u2190'} {scenario.proposers[matchP].name} <span className="font-mono">#{rank}</span></span>;
+                        })() : ' '}
+                      </div>
                     </div>
                   </div>
                 );
               })}
             </div>
-            <div style={{ textAlign: 'center', fontSize: '0.8125rem', color: receiverSide === 'women' ? '#9a8abf' : '#c4915c', marginTop: '0.375rem', fontWeight: 500 }}>
+            <div style={{ textAlign: 'center', fontSize: '0.8125rem', color: receiverSide === 'women' ? '#b3501d' : '#0f8040', marginTop: '0.375rem', fontWeight: 500 }}>
               {state.matches.size > 0 ? `Avg rank: #${(proposalMode === 'men' ? womenAvgRank : menAvgRank).toFixed(1)}` : '\u00A0'}
             </div>
           </div>
         </div>
       )}
 
-      {/* Expanded preferences panel */}
-      {expandedPrefs && (
+      {/* Expanded preferences panel — always present so the sheet never resizes */}
         <div className="gs-panel gs-prefs-panel">
           {(() => {
+            if (!expandedPrefs) {
+              return (
+                <span style={{ color: 'var(--text-tertiary)' }}>
+                  Click any name to see their full preference list.
+                </span>
+              );
+            }
             const [side, idxStr] = expandedPrefs.split('-');
             const idx = Number(idxStr);
             if (side === 'p') {
@@ -943,7 +982,6 @@ export const GaleShapleySimulator: React.FC = () => {
             }
           })()}
         </div>
-      )}
 
       {/* Stats bar */}
       <div className="gs-stats">
@@ -958,46 +996,32 @@ export const GaleShapleySimulator: React.FC = () => {
           <div className="gs-col-header" style={{ marginBottom: '0.75rem' }}>Match Quality</div>
           <div className="space-y-3">
             <div>
-              <div className="flex justify-between text-[0.8125rem] mb-1">
-                <span style={{ color: proposerSide === 'men' ? '#c4915c' : '#9a8abf' }}>{proposerLabel} (Proposers), avg choice: <strong>{state.matches.size > 0 ? `#${proposerAvgRank.toFixed(1)}` : ', '}</strong></span>
+              <div className="gs-quality-row">
+                <span style={{ color: proposerSide === 'men' ? '#0f8040' : '#b3501d' }}>{proposerLabel} (Proposers), avg choice: <strong>{state.matches.size > 0 ? `#${proposerAvgRank.toFixed(1)}` : '—'}</strong></span>
                 <span style={{ color: 'var(--text-secondary)' }}>{state.matches.size > 0 ? `${Math.round(((n + 1 - proposerAvgRank) / n) * 100)}% satisfaction` : ''}</span>
               </div>
               <div className="gs-progress-track">
-                <div className="gs-progress-fill" style={{ width: state.matches.size > 0 ? `${((n + 1 - proposerAvgRank) / n) * 100}%` : '0%', background: proposerSide === 'men' ? 'linear-gradient(90deg, #c4915c, #d4a853)' : 'linear-gradient(90deg, #9a8abf, #b07aab)', transition: 'width 0.3s' }} />
+                <div className="gs-progress-fill" style={{ width: state.matches.size > 0 ? `${((n + 1 - proposerAvgRank) / n) * 100}%` : '0%', background: proposerSide === 'men' ? '#0f8040' : '#b3501d', transition: 'width 0.3s' }} />
               </div>
             </div>
             <div>
-              <div className="flex justify-between text-[0.8125rem] mb-1">
-                <span style={{ color: receiverSide === 'women' ? '#9a8abf' : '#c4915c' }}>{receiverLabel} (Receivers), avg choice: <strong>{state.matches.size > 0 ? `#${receiverAvgRank.toFixed(1)}` : ', '}</strong></span>
+              <div className="gs-quality-row">
+                <span style={{ color: receiverSide === 'women' ? '#b3501d' : '#0f8040' }}>{receiverLabel} (Receivers), avg choice: <strong>{state.matches.size > 0 ? `#${receiverAvgRank.toFixed(1)}` : '—'}</strong></span>
                 <span style={{ color: 'var(--text-secondary)' }}>{state.matches.size > 0 ? `${Math.round(((n + 1 - receiverAvgRank) / n) * 100)}% satisfaction` : ''}</span>
               </div>
               <div className="gs-progress-track">
-                <div className="gs-progress-fill" style={{ width: state.matches.size > 0 ? `${((n + 1 - receiverAvgRank) / n) * 100}%` : '0%', background: receiverSide === 'women' ? 'linear-gradient(90deg, #9a8abf, #b07aab)' : 'linear-gradient(90deg, #c4915c, #d4a853)', transition: 'width 0.3s' }} />
+                <div className="gs-progress-fill" style={{ width: state.matches.size > 0 ? `${((n + 1 - receiverAvgRank) / n) * 100}%` : '0%', background: receiverSide === 'women' ? '#b3501d' : '#0f8040', transition: 'width 0.3s' }} />
               </div>
             </div>
           </div>
-          <p style={{ fontSize: '0.8125rem', color: 'var(--text-secondary)', marginTop: '0.75rem', lineHeight: 1.7 }}>
-            {state.matches.size > 0
-              ? <>The proposing side ({proposerLabel.toLowerCase()}) averages their <strong style={{ color: proposerSide === 'men' ? '#c4915c' : '#9a8abf' }}>#{proposerAvgRank.toFixed(1)}</strong> choice while the receiving side ({receiverLabel.toLowerCase()}) averages their <strong style={{ color: receiverSide === 'women' ? '#9a8abf' : '#c4915c' }}>#{receiverAvgRank.toFixed(1)}</strong> choice. This asymmetry is a fundamental property of the algorithm: proposers always get their best possible stable partner.</>
+          <p className="gs-quality-note">
+            {state.phase === 'done' && proposerAvgRank > receiverAvgRank
+              ? <>This run went against the theory, with only 10 people and random preferences, there&apos;s roughly a 17% chance the proposers end up with worse average ranks than the receivers. The gap is real but small at this scale. Hit <strong style={{ color: 'var(--text-primary)' }}>Reset</strong> to try again, or keep reading for the 100-person version where it&apos;s unmistakable.</>
+              : state.matches.size > 0
+              ? <>The proposing side ({proposerLabel.toLowerCase()}) averages their <strong style={{ color: proposerSide === 'men' ? '#0f8040' : '#b3501d' }}>#{proposerAvgRank.toFixed(1)}</strong> choice while the receiving side ({receiverLabel.toLowerCase()}) averages their <strong style={{ color: receiverSide === 'women' ? '#b3501d' : '#0f8040' }}>#{receiverAvgRank.toFixed(1)}</strong> choice. This asymmetry is a fundamental property of the algorithm: proposers always get their best possible stable partner.</>
               : 'Run the simulation to see how match quality differs between proposers and receivers.'}
           </p>
         </div>
-
-      {/* Counterfactual notice */}
-      {state.phase === 'done' && proposerAvgRank > receiverAvgRank && (
-        <div style={{
-          marginTop: '0.75rem',
-          padding: '0.75rem 1rem',
-          borderRadius: '0.5rem',
-          background: 'rgba(200, 102, 102, 0.08)',
-          border: '1px solid rgba(200, 102, 102, 0.2)',
-          fontSize: '0.8125rem',
-          color: 'var(--text-secondary)',
-          lineHeight: 1.6,
-        }}>
-          This run went against the theory, with only 10 people and random preferences, there&apos;s roughly a 17% chance the proposers end up with worse average ranks than the receivers. The gap is real but small at this scale. Hit <strong style={{ color: 'var(--text-primary)' }}>Reset</strong> to try again, or keep reading for the 100-person version where it&apos;s unmistakable.
-        </div>
-      )}
 
       {/* Step Log */}
         <div className="gs-log-section">
@@ -1005,6 +1029,11 @@ export const GaleShapleySimulator: React.FC = () => {
             Step Log {state.phase === 'done' && <span style={{ color: 'var(--accent)', textTransform: 'none' }}>(Complete!)</span>}
           </h4>
           <div className="gs-log-entries" ref={logRef}>
+            {state.log.length === 0 && (
+              <div style={{ color: 'var(--text-tertiary)', padding: '0.25rem 0' }}>
+                Press Play — every proposal lands here.
+              </div>
+            )}
             {state.log.map((entry, i) => (
               <div key={i} className="gs-log-entry">
                 <span className="gs-log-num">{i + 1}.</span>
@@ -1012,7 +1041,7 @@ export const GaleShapleySimulator: React.FC = () => {
                   className="gs-log-dot"
                   style={{
                     backgroundColor:
-                      entry.type === 'accept' ? '#d4a853' :
+                      entry.type === 'accept' ? '#101418' :
                       entry.type === 'replace' ? '#c49a6c' :
                       '#c86666',
                   }}
