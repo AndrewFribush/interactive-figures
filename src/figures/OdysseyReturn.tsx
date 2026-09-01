@@ -4,11 +4,11 @@ import { memo, useCallback, useEffect, useId, useMemo, useRef, useState } from '
 import { MEDITERRANEAN } from './map-data/mediterranean';
 import { HIGHLIGHT_CHANNELS, subscribeHighlight } from './highlight';
 
-// Fig 1.1.2 — Minard's method applied to the Odyssey: a band whose width is
+// Fig 1.1.2 · Minard's method applied to the Odyssey: a band whose width is
 // men remaining, flowing Troy → Ithaca over a real chart of the central
 // Mediterranean (Natural Earth 10m coastline; traditional identifications:
 // Djerba, Sicily, Messina, Gozo, Corfu). Press play and the return draws
-// itself in story time — legs run at
+// itself in story time · legs run at
 // the pace they were sailed, and the band waits where Odysseus waited. The
 // band steps down at a right angle at every loss. The numbers are Homer's
 // (12 ships of fifty from the Catalogue; six per ship at Ismarus; one man
@@ -22,10 +22,10 @@ const LOSS = '#b3501d';
 const LAND = '#f0f1ec';
 const COAST = 'rgba(16, 20, 24, 0.3)';
 
-// Animation clock: legs run on DISTANCE — the band draws at a constant chart
-// speed, so a long haul takes visibly longer than a short hop — while stays
+// Animation clock: legs run on DISTANCE · the band draws at a constant chart
+// speed, so a long haul takes visibly longer than a short hop · while stays
 // run on story time (seconds per voyage-year). A floor keeps quick hops
-// perceivable. Calypso is most of the runtime — that is the point.
+// perceivable. Calypso is most of the runtime · that is the point.
 const RATE = 1.3;
 const LEG_MIN = 0.35;
 const PX_PER_SEC = 170;
@@ -35,7 +35,7 @@ const X = (lon: number) => 30 + (lon - 8) * 32.7;
 const Y = (lat: number) => 370 - (lat - 31.5) * 31.8;
 // Real coastline: Natural Earth 10m geometry compiled into the repo by
 // scripts/build-map-data.mjs, already clipped to this chart's bbox, drawn
-// through the same transform as every stop so the geography is honest —
+// through the same transform as every stop so the geography is honest ·
 // Cape Malea, the Bonifacio strait, Djerba, and the Ionian islands are the
 // actual places the bands touch.
 const LAND_D = MEDITERRANEAN.rings
@@ -53,7 +53,7 @@ interface Stop {
   /** Men remaining after this stop's event. */
   men: number;
   ships: number;
-  /** Voyage years at arrival — the animation clock runs on these. */
+  /** Voyage years at arrival · the animation clock runs on these. */
   years: number;
   /** Color of the leg ARRIVING at this stop (waypoints inherit their journey's). */
   c: string;
@@ -67,9 +67,9 @@ interface Stop {
   anchor?: 'start' | 'middle' | 'end';
   /** Leader line start, for labels that stand away from their dot. */
   ll?: [number, number];
-  /** [yearsAtDeparture] — time spent here becomes a real pause. */
+  /** [yearsAtDeparture] · time spent here becomes a real pause. */
   stay?: number;
-  /** Course waypoint — no dot, no label. */
+  /** Course waypoint · no dot, no label. */
   silent?: boolean;
   /** Open-circle marker (a sighting, not a landing). */
   open?: boolean;
@@ -93,11 +93,11 @@ const STOPS: Stop[] = [
     c: '#0f8a8a', name: 'AEOLIA · BAG OF WINDS', ref: 'BK 10', lx: 31, ly: 186, anchor: 'start', ll: [241, 180] },
   { x: 285, y: 163, men: 522, ships: 12, years: 0.7, c: '#b8860b', silent: true },
   { ...S(20.2, 38.35), men: 522, ships: 12, years: 0.78,
-    c: '#b8860b', name: 'ITHACA IN SIGHT — BLOWN BACK', lx: 370, ly: 214, anchor: 'middle', open: true },
+    c: '#b8860b', name: 'ITHACA IN SIGHT · BLOWN BACK', lx: 370, ly: 214, anchor: 'middle', open: true },
   { x: 350, y: 178, men: 522, ships: 12, years: 0.83, c: '#64748b', silent: true },
   { ...S(14.95, 38.55), men: 522, ships: 12, years: 0.88, c: '#64748b', silent: true },
   // Six days of rowing up the Tyrrhenian: the course to the Laestrygonians
-  // bows north so the red leg visibly TURNS at Aeolia — without the bend it
+  // bows north so the red leg visibly TURNS at Aeolia · without the bend it
   // ran collinear with the slate return and read as one band changing color.
   { ...S(13.3, 40.5), men: 522, ships: 12, years: 0.94, c: '#c43d3d', silent: true },
   { ...S(9.2, 41.4), men: 38, ships: 1, years: 1.0,
@@ -137,7 +137,7 @@ interface Item {
 
 // The sailing schedule: leg duration ∝ chart distance (floored for
 // legibility); stays pause the band ∝ the years spent there. Built per pace
-// so hosts can slow the clock — the scrolly runs at reading speed while the
+// so hosts can slow the clock · the scrolly runs at reading speed while the
 // standalone figure keeps its quick tempo.
 interface Schedule {
   items: Item[];
@@ -193,7 +193,7 @@ const tForYears = (sched: Schedule, y: number) => {
   return sched.total;
 };
 
-/** Voyage years elapsed at clock time t — the strip's forward mapping. */
+/** Voyage years elapsed at clock time t · the strip's forward mapping. */
 const yearsAtT = (sched: Schedule, t: number) => {
   let y = 0;
   for (const item of sched.items) {
@@ -219,7 +219,7 @@ const dir = (a: { x: number; y: number }, b: { x: number; y: number }) => {
   return { ux, uy, nx: -uy, ny: ux };
 };
 
-/** Band quad for a→(ex,ey) at width w — butt ends, so cuts stay square. */
+/** Band quad for a→(ex,ey) at width w · butt ends, so cuts stay square. */
 const quad = (a: Stop, ex: number, ey: number, w: number) => {
   const { nx, ny } = dir(a, { x: ex, y: ey });
   const h = w / 2;
@@ -265,14 +265,14 @@ const xMark = (x: number, y: number, r: number) =>
 
 // Who is aboard ship g at a given state of the voyage. Ismarus takes six from
 // every ship; the Cyclops eats six of the flagship's crew; Laestrygonia sinks
-// every hull but the flagship — after that the whole tally lives in ship 0.
+// every hull but the flagship · after that the whole tally lives in ship 0.
 const aliveInShip = (g: number, men: number, ships: number) => {
   if (ships < 12) return g === 0 ? men : 0;
   if (g === 0) return men === 600 ? 50 : men === 528 ? 44 : 38;
   return men === 600 ? 50 : 44;
 };
 
-// Muster layout, permanent: the flagship — the ship the story follows —
+// Muster layout, permanent: the flagship · the ship the story follows ·
 // drawn enlarged at the sheet's center, the other eleven small in flanking
 // slots (five left, six right). Each group is authored at its original
 // center (39 + 53g) and placed by a static transform.
@@ -368,17 +368,17 @@ export default function OdysseyReturn({
 }: {
   land?: string;
   voyageRef?: { current: VoyageHandle | null };
-  /** Scroll-driven hosts REPLACE the step buttons' transport with these —
+  /** Scroll-driven hosts REPLACE the step buttons' transport with these ·
       the buttons scroll the essay, and the scroll (scrollama) sails the
       figure, so page and band never disagree. */
   onStepForward?: () => void;
   onStepBack?: () => void;
-  /** Runs after the internal reset — hosts scroll back to the top. */
+  /** Runs after the internal reset · hosts scroll back to the top. */
   onReset?: () => void;
-  /** Fires as the clock runs while playing, in voyage years — scroll hosts
+  /** Fires as the clock runs while playing, in voyage years · scroll hosts
       follow the sail with it. */
   onSail?: (years: number) => void;
-  /** Play/pause edge — while playing, scroll hosts stand down as drivers. */
+  /** Play/pause edge · while playing, scroll hosts stand down as drivers. */
   onPlayingChange?: (playing: boolean) => void;
   /** Clock override: stay seconds per voyage-year, minimum leg seconds, and
       band drawing speed in chart px/s. The scrolly slows the sail to reading
@@ -412,13 +412,13 @@ export default function OdysseyReturn({
   const raf = useRef(0);
   const tRef = useRef(0);
   const scrubbing = useRef(false);
-  // When set, the clock pulls in and pauses at this time — clicking the
+  // When set, the clock pulls in and pauses at this time · clicking the
   // button mid-sail schedules a stop at the next named stop's arrival.
   const pauseAtRef = useRef<number | null>(null);
   const clipId = useId();
   // Latest onSail, reachable from the rAF loop: the clock's completion paths
   // pause and land in the SAME commit, so the playing-gated effect below
-  // never sees the final position — they emit it directly instead.
+  // never sees the final position · they emit it directly instead.
   const onSailRef = useRef(onSail);
   useEffect(() => {
     onSailRef.current = onSail;
@@ -485,7 +485,7 @@ export default function OdysseyReturn({
     seek([...STEP_TIMES].reverse().find((s) => s < tRef.current - 0.01) ?? 0);
   }, [seek, STEP_TIMES]);
   // Sail forward to a target under the clock (reusing the pause-at machinery);
-  // backward it jumps — the voyage never un-sails.
+  // backward it jumps · the voyage never un-sails.
   const sailTo = useCallback(
     (nt: number) => {
       const c = Math.max(0, Math.min(TOTAL, nt));
@@ -510,7 +510,7 @@ export default function OdysseyReturn({
   }, [voyageRef, seek, sailTo, sched]);
   // Shareable cursor (default-on url state): ?f112_y=<years> restores the
   // voyage position; the sail mirrors back, debounced. Applied post-mount
-  // only — SSR renders year zero (hydration rule in useFigUrlState).
+  // only · SSR renders year zero (hydration rule in useFigUrlState).
   const [sharedYears, writeYears] = useFigUrlState(figParamKey('1.1.2', 'y'));
   const restoredRef = useRef(false);
   useEffect(() => {
@@ -562,7 +562,7 @@ export default function OdysseyReturn({
 
   const arrived = (i: number) => i === 0 || ITEMS.some((it) => it.kind === 'leg' && it.i === i && t >= it.t1);
   // The joint at stop i is painted in the OUTGOING leg's color, so it must
-  // wait for that leg to actually depart — on arrival (e.g. paused at a step)
+  // wait for that leg to actually depart · on arrival (e.g. paused at a step)
   // it would flash the next color before the course has been sailed.
   const departed = (i: number) => ITEMS.some((it) => it.kind === 'leg' && it.i === i + 1 && t > it.t0);
 
@@ -675,7 +675,7 @@ export default function OdysseyReturn({
           />
           {/* The chart: real coastlines; the sheet's dot grid is the sea.
               A `land` prop (a path in this frame's coordinates, possibly
-              unclipped) overrides the compiled region — used by map-lab. */}
+              unclipped) overrides the compiled region · used by map-lab. */}
           <clipPath id={clipId}>
             <rect x={30} y={20} width={670} height={350} />
           </clipPath>
@@ -689,7 +689,7 @@ export default function OdysseyReturn({
             fillRule="evenodd"
           />
 
-          {/* Planned course, faint — the chart before the voyage is drawn on it */}
+          {/* Planned course, faint · the chart before the voyage is drawn on it */}
           <polyline
             points={STOPS.map((s) => `${s.x},${s.y}`).join(' ')}
             fill="none"
@@ -699,11 +699,11 @@ export default function OdysseyReturn({
             opacity={0.5}
           />
 
-          {/* The band: filled quads with butt ends — losses step down square.
+          {/* The band: filled quads with butt ends · losses step down square.
               Each junction's square miter fill (which leaves the incoming
               band's wider face exposed so the bar visibly steps down) paints
               IMMEDIATELY after its incoming leg, so later legs cross OVER
-              earlier joints — a trailing joint layer left stale miters
+              earlier joints · a trailing joint layer left stale miters
               sitting on top of bands that arrived after them. */}
           {ITEMS.filter((it) => it.kind === 'leg').map((it) => {
             const from = STOPS[it.i - 1];
@@ -869,7 +869,7 @@ export default function OdysseyReturn({
             height={54}
             fill="transparent"
             role="slider"
-            aria-label="Voyage timeline — drag to scrub, arrow keys to step by stop"
+            aria-label="Voyage timeline · drag to scrub, arrow keys to step by stop"
             aria-valuemin={0}
             aria-valuemax={10}
             aria-valuenow={Math.round(years * 10) / 10}

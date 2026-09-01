@@ -2,7 +2,7 @@
 
 // Prose↔figure linking (the Distill/Ciechanowski move): a tiny highlight
 // channel registry. Inline <FigRef id> spans publish hover/focus; figures
-// subscribe to ids they know how to emphasize. No context provider needed —
+// subscribe to ids they know how to emphasize. No context provider needed ·
 // the channel is module-global, which is correct here: a term in the essay
 // should light up the figure wherever it is on the page.
 

@@ -4,7 +4,7 @@ import { useCallback, useRef, useState } from 'react';
 
 // Shareable figure state: any figure can mirror a piece of its state into
 // the URL query string (replaceState, no navigation, debounced), so a
-// specific view of an instrument is a copyable link — on plates, in
+// specific view of an instrument is a copyable link · on plates, in
 // context, and inside embeds alike. Keys are namespaced by the caller
 // (e.g. `f0117_t`) so several figures can share one page.
 export function useFigUrlState(key: string): [string | null, (v: string | null) => void] {
