@@ -657,7 +657,10 @@ export default function OdysseyReturn({
         <svg
           viewBox="0 -60 720 490"
           style={{ minWidth: 560, width: '100%', height: 'auto', display: 'block' }}
-          role="img"
+          // role="group", not "img": the svg contains a real slider control,
+          // and interactive descendants inside an image role are invisible to
+          // assistive tech (axe: nested-interactive).
+          role="group"
           aria-label="Flow map of Odysseus's return from Troy across the Mediterranean: twelve ships and 600 men leave, one man arrives"
         >
           {/* The muster: every ship, every man, faded as they are lost */}
