@@ -82,3 +82,5 @@ The Odyssey presentation moves crowded labels into numbered callouts and a respo
 The wrapper uses the source site's ink, amber, and Geist typography. Next.js directives and imports are adapted for Vite; an essay continuation links back to the original article. Screenshots show the local gallery, captured on 2026-10-03. The matching screenshot is a random sample; the other figures use their recorded default state or a paused voyage.
 
 Code and original artwork are copyright Andrew Fribush, all rights reserved; publication is not an open-source license grant. See [NOTICE](NOTICE) and [ATTRIBUTION.md](ATTRIBUTION.md) for data, fonts, and third-party terms.
+
+[Development history](HISTORY.md) preserves the original changes to the four figures and their local dependencies.
