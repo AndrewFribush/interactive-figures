@@ -1,8 +1,10 @@
 # Interactive figures
 
-Four working figures by [Andrew Fribush](https://www.andrewfribush.com): route planning, stable matching, job-search probabilities, and the Odyssey. Each one is a small explanation you can run, inspect, and change locally.
+Four interactive explanations from [my site](https://www.andrewfribush.com): plan a Halloween candy route, switch who proposes in stable matching, rerun a thousand job searches, or follow the Odyssey's dwindling crew. You can run, inspect, and change each figure locally.
 
-React and TypeScript render the figures directly in SVG and HTML. No charting library, API key, account, or backend is needed. The original figures remain available on [andrewfribush.com](https://www.andrewfribush.com/figures).
+The algorithms and drawings are written together in React and TypeScript, with SVG and HTML for rendering. Routes follow a generated street graph; the Odyssey's band widths, ship counts, and timeline share one schedule. Forty-one tests cover route algorithms, geometry, and interaction behavior. The exact planner distinguishes a proved optimum from the best route it found before hitting its search cap.
+
+No charting library, API key, account, or backend is needed. The original figures remain available on [andrewfribush.com](https://www.andrewfribush.com/figures).
 
 ## The collection
 
@@ -39,17 +41,17 @@ npm run check      # Tests and build, also used by CI
 
 [![Trick-or-treat routes](public/screenshots/trick-or-treat.jpg)](https://www.andrewfribush.com/fig/1.1.15)
 
-Click houses to plan a route, race all walkers, then select a planner and step through its reasoning. Every candidate route includes the walk home before curfew.
+Click houses to plan a route, race all walkers, then select a planner and step through its reasoning. Every candidate route includes the walk home before curfew. Forgetting that part would make every planner look rather clever.
 
 The [town generator](src/figures/TrickOrTreat.town.ts) builds seeded street graphs, houses, and candy rewards. Distances follow the streets and satisfy the triangle inequality after rounding. The [planners](src/figures/TrickOrTreat.algos.ts) compare nearest-neighbor and candy-per-minute greedy choices; 2-opt reversals followed by insertion; seeded simulated annealing; and branch-and-bound search with a fractional-knapsack upper bound. The exact search is capped at 300,000 partial routes and explicitly distinguishes a proved optimum from the best route found before the cap. This is a small orienteering problem, not a shortest route through every house.
 
-The retained tests compare exact search with an independent subset dynamic program on small boards, check that routes return before curfew, exercise the cap, and check houses against visible road and house geometry. UI tests cover resizing, stale selections, and Strict Mode behavior.
+The tests compare exact search with an independent subset dynamic program on small boards, require routes to return before curfew, exercise the search cap, and check house placement against visible road and house geometry. UI tests cover resizing, stale selections, and Strict Mode behavior.
 
 ## Stable matching
 
 [![A completed stable matching](public/screenshots/stable-matching.jpg)](https://www.andrewfribush.com/fig/2.1.1)
 
-Play a round, inspect a person's preferences, then switch which group proposes. Switching sides keeps the same underlying preferences; Reset creates new random rankings.
+Play a round, inspect a person's preferences, then switch which group proposes. Switching sides keeps the underlying preferences fixed so you can compare the two outcomes. Reset creates new random rankings.
 
 The [generator](src/figures/GaleShapleySimulator.tsx) yields each proposal's result and a reducer updates the view. Receivers keep their preferred proposal so far and release a previous match when a better proposal arrives. Under these complete, strict preference lists, deferred acceptance terminates in a stable matching. “Stable” means no unmatched pair prefers each other to their assigned partners; it does not mean first choices for everyone. The ten-person example is synthetic, and random small samples need not produce a lower mean rank for the proposing group. The [original essay](https://www.andrewfribush.com/blog/women-should-ask-men-out) adds the wider context and a larger simulation.
 
@@ -57,23 +59,23 @@ The [generator](src/figures/GaleShapleySimulator.tsx) yields each proposal's res
 
 [![Distribution of a thousand simulated job searches](public/screenshots/job-search.jpg)](https://www.andrewfribush.com/fig/1.1.12)
 
-Change applications per week, interview rate, or offer rate, then rerun the sample. The median and upper tail show why a single average hides so much variation.
+Change applications per week, interview rate, or offer rate, then rerun the sample. The median and upper tail show how widely outcomes can vary under the same assumptions.
 
 The [model](src/figures/SearchSimulator.tsx) assumes independent applications with constant probabilities. With `a` applications per week, interview probability `i`, and conditional offer probability `o`, a week succeeds with probability `1 − (1 − i·o)^a`. A seeded random generator draws 1,000 search durations, censored at 78 weeks. Defaults were tuned near a [BLS/FRED median](https://fred.stlouisfed.org/series/UEMPMED); the included observation snapshot ends in July 2026 and does not update itself.
 
-This is an illustrative probability model, not a prediction for an individual job seeker. The BLS series measures duration of unemployment among people still unemployed, while the simulation measures time to a first offer. The line is a contextual comparison, not validation of the model. Application dependence, changing odds, labor-market differences, and competing reasons for ending a search are outside its scope.
+This is an illustrative probability model, not a prediction for an individual job seeker. The BLS series measures duration of unemployment among people still unemployed, while the simulation measures time to a first offer. The line supplies context; sharing a chart with official statistics does not validate the model. Application dependence, changing odds, labor-market differences, and competing reasons for ending a search are outside its scope.
 
 ## The return from Troy
 
 [![The Odyssey rendered as a flow map](public/screenshots/odyssey.jpg)](https://www.andrewfribush.com/fig/1.1.2)
 
-Play the voyage, step between stops, or drag its timeline. The band width records men remaining; the ship muster and years elapsed use the same schedule. Numbered callouts connect the map to a readable stop key below it. On a phone, scroll the map sideways; the key fits the screen.
+Play the voyage, step between stops, or drag its timeline. The band width records men remaining; the ship muster and years elapsed follow the same schedule, so the drawing and its counters stay in agreement. Numbered callouts connect the map to a readable stop key below it. On a phone, scroll the map sideways; the key fits the screen.
 
 The [SVG renderer](src/figures/OdysseyReturn.tsx) applies Minard's flow-map idea to the Odyssey. Travel segments advance with chart distance; stays advance with story time. A compiled [Natural Earth coastline](src/figures/map-data/mediterranean.ts) supplies the geographic context. Place identifications are traditional and interpretive: this is a reading of a poem, not a claim to have reconstructed a historical voyage. The 600-man starting muster is the figure's explicit ship-accounting assumption.
 
 ## What is included
 
-The four renderers, their local data and helpers, the route planner's existing tests, a small Vite gallery, fonts, and screenshots. Figures are loaded separately so opening one does not load the other three. The source was extracted from Andrew's personal site at commit `ecdae4931aec5ad6cf62b3ab461dfc5d679e697d`; [provenance.json](provenance.json) records each original path and SHA-256 hash, plus the few standalone adaptations. The algorithms and drawing geometry are preserved. A small matching UI fix keeps the completed state visible after the algorithm finishes; a focused component test covers that behavior.
+The four renderers, their local data and helpers, the route planner's existing tests, a small Vite gallery, fonts, and screenshots. Figures are loaded separately so opening one does not load the other three. The source was extracted from my personal site at commit `ecdae4931aec5ad6cf62b3ab461dfc5d679e697d`; [provenance.json](provenance.json) records each original path and SHA-256 hash, plus the few standalone adaptations. The algorithms and drawing geometry are preserved. A small matching UI fix keeps the completed state visible after the algorithm finishes; a focused component test covers that behavior.
 
 The Odyssey presentation moves crowded labels into numbered callouts and a responsive stop key, with counts above the map; its data, route geometry, and timing are unchanged. Gallery thumbnails show the upper matching diagram and the Odyssey map; the full screenshots shown here retain the surrounding notes and controls.
 
