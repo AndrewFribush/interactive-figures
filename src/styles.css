@@ -1,0 +1,104 @@
+@import 'tailwindcss';
+
+@font-face { font-family: Geist; src: url('/fonts/Geist-Variable.woff2') format('woff2'); font-weight: 100 900; font-display: swap; }
+@font-face { font-family: 'Geist Mono'; src: url('/fonts/GeistMono-Variable.woff2') format('woff2'); font-weight: 100 900; font-display: swap; }
+
+:root {
+  --font-geist-sans: Geist;
+  --font-geist-mono: 'Geist Mono';
+  --bg-primary: #fff;
+  --bg-secondary: #f7f7f5;
+  --bg-tertiary: #f1f1ee;
+  --text-primary: #1a1a1a;
+  --text-secondary: #555250;
+  --text-tertiary: #6f6046;
+  --accent: #8a5c00;
+  --accent-hover: #6f4a00;
+  --accent-subtle: rgba(138, 92, 0, 0.07);
+  --border: rgba(74, 56, 20, 0.13);
+  --border-hover: rgba(74, 56, 20, 0.30);
+  font-family: Geist, system-ui, sans-serif;
+  color: var(--text-primary);
+  background: var(--bg-primary);
+  font-synthesis: none;
+}
+
+@theme inline {
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+  --color-primary: var(--text-primary);
+  --color-secondary: var(--text-secondary);
+  --color-tertiary: var(--text-tertiary);
+  --color-accent: var(--accent);
+  --color-bg-primary: var(--bg-primary);
+  --color-bg-secondary: var(--bg-secondary);
+  --color-bg-tertiary: var(--bg-tertiary);
+}
+
+* { box-sizing: border-box; }
+body { margin: 0; font-size: 16px; line-height: 1.6; }
+a { color: var(--accent); text-underline-offset: 3px; }
+a:hover { text-decoration: underline; }
+a:focus-visible, button:focus-visible, [tabindex]:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; }
+button, [role='button'], input[type='range'] { cursor: pointer; }
+button:disabled { cursor: default; }
+.site-header, main, footer { width: min(100% - 40px, 860px); margin: 0 auto; }
+.site-header { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 8px 20px; padding: 24px 0; border-bottom: 1px solid var(--border); font-size: 14px; }
+.site-header a:first-child { color: var(--text-primary); font-weight: 650; }
+main { padding-top: 42px; }
+.intro { max-width: 66ch; margin-bottom: 34px; }
+.intro p { margin: 12px 0; }
+.eyebrow { font: 12px/1.5 'Geist Mono', monospace; color: var(--text-tertiary); letter-spacing: .035em; }
+h1 { font-size: 28px; font-weight: 650; line-height: 1.2; margin: 10px 0 16px; letter-spacing: -.025em; }
+h2 { font-size: 18px; font-weight: 600; line-height: 1.35; margin: 0 0 8px; }
+.back-link { display: inline-block; font-size: 14px; margin-bottom: 24px; }
+.gallery { list-style: none; padding: 0; margin: 0; }
+.gallery li { display: grid; grid-template-columns: 230px 1fr; gap: 24px; padding: 25px 0; border-top: 1px solid var(--border); }
+.gallery .eyebrow { margin: 0 0 5px; }
+.gallery p { margin: 6px 0 12px; }
+.gallery h2 a { color: var(--text-primary); }
+.preview { align-self: center; background: #fdfdfc; }
+.preview img { display: block; width: 100%; height: 175px; object-fit: contain; }
+.gallery-links { display: flex; flex-wrap: wrap; gap: 20px; font-size: 14px; }
+figure { margin: 0; }
+figcaption { font: 12px/1.5 'Geist Mono', monospace; margin: 0 0 8px; }
+.figure-sheet { border: 1.5px solid var(--text-primary); background: radial-gradient(rgba(16,20,24,.12) .8px, transparent .9px) 0 0 / 12px 12px, #fdfdfc; }
+.figure-job-search { padding: 18px 20px 22px; }
+.figure-job-search .hover\:bg-tertiary:hover { background: var(--bg-tertiary); }
+.loading { padding: 24px; }
+.notes { max-width: 66ch; margin: 32px 0; }
+.notes h2 { font-size: 16px; margin: 28px 0 8px; }
+.notes p { margin: 0 0 16px; }
+.source { font-size: 13px; color: var(--text-secondary); }
+.figure-nav { display: flex; flex-wrap: wrap; gap: 10px 24px; border-top: 1px solid var(--border); padding-top: 22px; font-size: 14px; }
+footer { border-top: 1px solid var(--border); margin-top: 52px; padding: 22px 0 34px; font-size: 13px; color: var(--text-secondary); }
+.skip-link { position: absolute; left: 20px; top: -60px; background: white; padding: 8px; z-index: 10; }
+.skip-link:focus { top: 8px; }
+@media (max-width: 600px) {
+  .site-header, main, footer { width: calc(100% - 28px); }
+  main { padding-top: 28px; }
+  .gallery li { grid-template-columns: 1fr; gap: 12px; }
+  .preview img { height: 180px; }
+  h1 { font-size: 25px; }
+  .figure-job-search { padding: 14px 12px 18px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
+}
+
+/* Map annotations stay outside the crowded route geometry. */
+.voyage-readout { display: flex; flex-wrap: wrap; gap: 6px 22px; padding: 12px 20px 8px; font-size: 13px; }
+.voyage-readout strong { font-size: 17px; margin-right: 3px; }
+.voyage-current { margin: 0; padding: 4px 20px 12px; min-height: 46px; font: 13px/1.6 'Geist Mono', monospace; }
+.voyage-current strong, .voyage-key strong { color: #b3501d; }
+.voyage-number { display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; width: 24px; height: 24px; border: 1px solid var(--text-tertiary); border-radius: 50%; font: 12px/1 'Geist Mono', monospace; background: white; }
+.voyage-key { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px 20px; margin: 0; padding: 20px; list-style: none; border-top: 1px solid var(--border-hover); font: 12px/1.5 'Geist Mono', monospace; }
+.voyage-key li { display: flex; gap: 8px; align-items: baseline; }
+.voyage-key small { display: block; font-size: 12px; color: var(--text-secondary); }
+.voyage-key [aria-current='step'] .voyage-number { color: white; background: var(--text-primary); border-color: var(--text-primary); }
+.voyage-scroll-hint { display: none; }
+@media (max-width: 600px) {
+  .voyage-key { grid-template-columns: 1fr; gap: 12px; padding: 16px; }
+  .voyage-readout, .voyage-current { padding-left: 16px; padding-right: 16px; }
+  .voyage-scroll-hint { display: block; margin: 0 16px 8px; font-size: 12px; color: var(--text-secondary); }
+}

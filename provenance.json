@@ -1,0 +1,140 @@
+{
+  "source": "Andrew Fribush personal site",
+  "commit": "ecdae4931aec5ad6cf62b3ab461dfc5d679e697d",
+  "extracted": "2026-10-03",
+  "files": [
+    {
+      "source": "src/app/components/figures/TrickOrTreat.tsx",
+      "file": "src/figures/TrickOrTreat.tsx",
+      "sourceSha256": "157905766874bb415c9261a34fc9fa32fb78f410a57776ca33b15653e260caea",
+      "sha256": "530d0dab31dbb9b0185976f57082160422d0f7394a00553ffcade6f1e8eb6dad",
+      "adaptation": "Removed Next.js client directive; the standalone app is entirely client-rendered."
+    },
+    {
+      "source": "src/app/components/figures/TrickOrTreat.town.ts",
+      "file": "src/figures/TrickOrTreat.town.ts",
+      "sourceSha256": "efe7715d8062e7c1e4e54effc306729ad8297dda5b2545bf4af0e231326ebb7b",
+      "sha256": "efe7715d8062e7c1e4e54effc306729ad8297dda5b2545bf4af0e231326ebb7b",
+      "adaptation": null
+    },
+    {
+      "source": "src/app/components/figures/TrickOrTreat.algos.ts",
+      "file": "src/figures/TrickOrTreat.algos.ts",
+      "sourceSha256": "e571837fe3e2db4c6af5b48ae9a9e09d8ee14cc2dd0f0bf20a96343561b3b4c7",
+      "sha256": "e571837fe3e2db4c6af5b48ae9a9e09d8ee14cc2dd0f0bf20a96343561b3b4c7",
+      "adaptation": null
+    },
+    {
+      "source": "src/app/components/figures/TrickOrTreat.layout.ts",
+      "file": "src/figures/TrickOrTreat.layout.ts",
+      "sourceSha256": "093ac02061165563056538d6f2ac6802b0cf5615e14e7f82729a7f85ab981655",
+      "sha256": "093ac02061165563056538d6f2ac6802b0cf5615e14e7f82729a7f85ab981655",
+      "adaptation": null
+    },
+    {
+      "source": "src/app/components/figures/TrickOrTreat.algos.test.ts",
+      "file": "src/figures/TrickOrTreat.algos.test.ts",
+      "sourceSha256": "9a6537cd88167d249557122ecd75b5b6188e523c258cb63bcd13dcc19db18ee9",
+      "sha256": "9a6537cd88167d249557122ecd75b5b6188e523c258cb63bcd13dcc19db18ee9",
+      "adaptation": null
+    },
+    {
+      "source": "src/app/components/figures/TrickOrTreat.layout.test.ts",
+      "file": "src/figures/TrickOrTreat.layout.test.ts",
+      "sourceSha256": "c24ba2dfa4f314280a29c0ead0172d36ff511e0a5c8e58d496481d3164c6ab52",
+      "sha256": "c24ba2dfa4f314280a29c0ead0172d36ff511e0a5c8e58d496481d3164c6ab52",
+      "adaptation": null
+    },
+    {
+      "source": "src/app/components/figures/TrickOrTreat.test.tsx",
+      "file": "src/figures/TrickOrTreat.test.tsx",
+      "sourceSha256": "a75543c00f61f5fc4b9383454d26d5ec216192dd741821b2c149aeb7e346abef",
+      "sha256": "a75543c00f61f5fc4b9383454d26d5ec216192dd741821b2c149aeb7e346abef",
+      "adaptation": null
+    },
+    {
+      "source": "src/app/components/figures/SearchSimulator.tsx",
+      "file": "src/figures/SearchSimulator.tsx",
+      "sourceSha256": "d5ed289676acbf88c2616c30b646c8768a1f588cc5f2f5bf48f8eac1cd868849",
+      "sha256": "39deb4db5f219be13e77fab9c70edf0fa04d9b40bb79553774b2dc145759d76c",
+      "adaptation": "Removed Next.js client directive; the standalone app is entirely client-rendered."
+    },
+    {
+      "source": "src/app/components/figures/searchDuration.data.ts",
+      "file": "src/figures/searchDuration.data.ts",
+      "sourceSha256": "0d690ac93743364318dd734592ec812da7c72d3bbc33a3a77ae735875f4758f2",
+      "sha256": "0d690ac93743364318dd734592ec812da7c72d3bbc33a3a77ae735875f4758f2",
+      "adaptation": null
+    },
+    {
+      "source": "src/app/components/figures/OdysseyReturn.tsx",
+      "file": "src/figures/OdysseyReturn.tsx",
+      "sourceSha256": "ef35a7e4a2b281cb4c7f728d4a05e1b86cc8eb9c00c725bbfe3fd609a6233f9d",
+      "sha256": "a809a50f544997c49299362868c1a435ed776cfca1593398c849cae856746479",
+      "adaptation": "Relative import for useFigUrlState. Removed Next.js client directive; the standalone app is entirely client-rendered. Replaced overlapping map text with 15 numbered leader callouts and a responsive HTML stop key; moved survivor counts and current-stop text above the map. Stop data, route geometry, coastline, timing, and playback are unchanged."
+    },
+    {
+      "source": "src/app/components/figures/map-data/mediterranean.ts",
+      "file": "src/figures/map-data/mediterranean.ts",
+      "sourceSha256": "9f042382c72619549774072643f615727ce778b0b7a0b1115de51846f24672f0",
+      "sha256": "9f042382c72619549774072643f615727ce778b0b7a0b1115de51846f24672f0",
+      "adaptation": null
+    },
+    {
+      "source": "src/app/components/figures/map-data/types.ts",
+      "file": "src/figures/map-data/types.ts",
+      "sourceSha256": "99e66ebdc3b3f8cd9be8cbd04814ff10024f77f4e538f0fc2e3ec24348c60651",
+      "sha256": "99e66ebdc3b3f8cd9be8cbd04814ff10024f77f4e538f0fc2e3ec24348c60651",
+      "adaptation": null
+    },
+    {
+      "source": "src/app/components/figures/useFigUrlState.ts",
+      "file": "src/figures/useFigUrlState.ts",
+      "sourceSha256": "2002d9711ab720147c0371f31e382a597fabe27b6513eb516a262225d35c1f12",
+      "sha256": "18ed98c0518b749bc05355e0c96010857a71ec1e8fb98a0c0f2545fe30e159b5",
+      "adaptation": "Removed Next.js client directive; the standalone app is entirely client-rendered."
+    },
+    {
+      "source": "src/app/components/figures/highlight.ts",
+      "file": "src/figures/highlight.ts",
+      "sourceSha256": "25a129928e5adbc3aed140b584eddbcdd58b4f56d5237a2cfd61cdc83fe23614",
+      "sha256": "755a1278152f167445954b4678a4149e3fddade6c98198dcbc855bb430d63585",
+      "adaptation": "Removed Next.js client directive; the standalone app is entirely client-rendered."
+    },
+    {
+      "source": "src/app/components/figures/figureTokens.ts",
+      "file": "src/figures/figureTokens.ts",
+      "sourceSha256": "c6fb219df301d1669ed80254ce112b0906ee25bb1f13ab504f0a95ec65a62ff6",
+      "sha256": "c6fb219df301d1669ed80254ce112b0906ee25bb1f13ab504f0a95ec65a62ff6",
+      "adaptation": null
+    },
+    {
+      "source": "src/app/components/figures/kit/constants.ts",
+      "file": "src/figures/kit/constants.ts",
+      "sourceSha256": "42862cf8b504b8336e85d0beb89fdcfcbf768a770341b288bb555c6b5d7cbf0e",
+      "sha256": "42862cf8b504b8336e85d0beb89fdcfcbf768a770341b288bb555c6b5d7cbf0e",
+      "adaptation": null
+    },
+    {
+      "source": "src/app/components/figures/kit/useContainerWidth.ts",
+      "file": "src/figures/kit/useContainerWidth.ts",
+      "sourceSha256": "08bd1c3de40456c0b78d8c573b60fe5fd49e9b10c16a345378fd2f92cdc95dab",
+      "sha256": "a1ff3003b30365cb5f75448f4475fe695b581eef79d7c279c3ead12298173b92",
+      "adaptation": "Removed Next.js client directive; the standalone app is entirely client-rendered."
+    },
+    {
+      "source": "src/app/components/figures/kit/useTween.ts",
+      "file": "src/figures/kit/useTween.ts",
+      "sourceSha256": "f38d584a2b1d31a1973ad0937a27118a900dbe3488427cce8a9e1a2ec46ebbf3",
+      "sha256": "d2b13f0b0b3e419978b96a52a90fd8de3035c0d1364a74e2d6b813cc7b84705f",
+      "adaptation": "Removed Next.js client directive; the standalone app is entirely client-rendered."
+    },
+    {
+      "source": "src/app/blog/components/interactive/GaleShapleySimulator.tsx",
+      "file": "src/figures/GaleShapleySimulator.tsx",
+      "sourceSha256": "c288ad1db26ff59d4338bb81832ea51253268d61be5b04b47d5e3510dc7eecea",
+      "sha256": "e98fad52b767d05def515182e677558dcc2f73442b410daa78b019dacfe3868d",
+      "adaptation": "Relative import for useFigUrlState. Removed Next.js client directive; the standalone app is entirely client-rendered. Replaced the essay-only continuation with a link to the original essay. Preserved the completed UI phase after the generator finishes; no matching decisions changed."
+    }
+  ]
+}
