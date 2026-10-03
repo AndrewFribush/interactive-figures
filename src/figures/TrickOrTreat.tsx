@@ -3,8 +3,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { KeyboardEvent as ReactKeyboardEvent, ReactNode } from 'react';
 import { MONO, INK, SEC, DIM, RULE, LOSS, SHEET } from './figureTokens';
-import { FS, CH, LINE, lerp, wrapText, useContainerWidth, useTween, useMix, reducedMotion, crossfade, MarkCallout } from './kit';
-import type { CalloutBox } from './kit';
+import { FS, CH, LINE, lerp, wrapText, useContainerWidth, useTween, useMix, reducedMotion, crossfade } from './kit';
+import { HOUSE_A, HOUSE_B, WALL_HEIGHT, ROOF_HEIGHT, layoutHouses, spreadWalkers } from './TrickOrTreat.layout';
 import { TREATS, BULB_R, makeTown, streetName } from './TrickOrTreat.town';
 import type { Pt, Town, TownSize } from './TrickOrTreat.town';
 import { ALGOS, EXACT_NODE_CAP, arrivals, planAll, routeHaul, routeMinutes } from './TrickOrTreat.algos';
@@ -24,7 +24,7 @@ import type { AlgoKey, Plan } from './TrickOrTreat.algos';
 type WKey = AlgoKey | 'you';
 const WKEYS: readonly WKey[] = ['nearest', 'ratio', 'twoopt', 'anneal', 'exact', 'you'];
 const LABEL: Record<WKey, string> = { ...(Object.fromEntries(ALGOS.map((a) => [a.key, a.label])) as Record<AlgoKey, string>), you: 'YOU' };
-const SHORT: Record<WKey, string> = { ...(Object.fromEntries(ALGOS.map((a) => [a.key, a.short])) as Record<AlgoKey, string>), you: 'YOU' };
+const SHORT: Record<WKey, string> = { ...(Object.fromEntries(ALGOS.map((a) => [a.key, a.short])) as Record<AlgoKey, string>), ratio: 'CANDY/MIN', you: 'YOU' };
 
 // The figure's column on / and /fig/N is about 500px at desktop widths.
 const SSR_WIDTH = 500;
@@ -39,8 +39,6 @@ const BOARD_MAX_H: Record<TownSize, number> = { compact: 188, wide: 222, side: 4
 const sizeFor = (w: number): TownSize => (w < 440 ? 'compact' : w < 860 ? 'wide' : 'side');
 const RACE_SECONDS = 10;
 const SQ3 = Math.sqrt(3) / 2;
-const HOUSE_A = 0.34;
-const HOUSE_B = 0.27;
 
 const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v));
 const r2 = (v: number) => Math.round(v * 100) / 100;
@@ -144,28 +142,16 @@ function ActionLabel({ x, y, text, aria, onClick, off }: { x: number; y: number;
   );
 }
 
-/** The porch light: brighter and bigger for better candy, off for a toothbrush. */
+/** Distinct shapes keep the candy values readable without oversized glows. */
 function Lamp({ x, y, treat, k = 1 }: { x: number; y: number; treat: number; k?: number }) {
-  if (treat === 4) return <circle cx={x} cy={y} r={2.5 * k} fill={SHEET} stroke={DIM} strokeWidth={1} />;
-  if (treat === 3) return <circle cx={x} cy={y} r={2.7 * k} fill={LOSS} fillOpacity={0.22} stroke={LOSS} strokeWidth={1.1} />;
-  if (treat === 2) return <circle cx={x} cy={y} r={3.1 * k} fill={LOSS} />;
-  if (treat === 1)
-    return (
-      <g>
-        <circle cx={x} cy={y} r={6.6 * k} fill={LOSS} opacity={0.16} />
-        <circle cx={x} cy={y} r={3.7 * k} fill={LOSS} />
-      </g>
-    );
-  return (
-    <g>
-      <circle cx={x} cy={y} r={8.6 * k} fill={LOSS} opacity={0.2} />
-      {[0, 1, 2, 3, 4, 5].map((i) => {
-        const a = (i / 6) * Math.PI * 2 + Math.PI / 6;
-        return <line key={i} x1={r2(x + Math.cos(a) * 9.6 * k)} y1={r2(y + Math.sin(a) * 9.6 * k)} x2={r2(x + Math.cos(a) * 12.6 * k)} y2={r2(y + Math.sin(a) * 12.6 * k)} stroke={LOSS} strokeWidth={1.1} strokeLinecap="round" />;
-      })}
-      <circle cx={x} cy={y} r={4.3 * k} fill={LOSS} />
-    </g>
-  );
+  if (treat === 0) return <rect x={x - 3.2 * k} y={y - 3.2 * k} width={6.4 * k} height={6.4 * k} rx={0.5} fill={LOSS} />;
+  if (treat === 1) return <circle cx={x} cy={y} r={3 * k} fill={LOSS} />;
+  if (treat === 2) return <g>
+    <line x1={x} y1={y} x2={x} y2={y + 3.2 * k} stroke={LOSS} strokeWidth={1.2} />
+    <circle cx={x} cy={y - 0.5 * k} r={2.5 * k} fill={SHEET} stroke={LOSS} strokeWidth={1.2} />
+  </g>;
+  if (treat === 3) return <path d={`M${x} ${y - 3 * k}l${3 * k} ${3 * k}l${-3 * k} ${3 * k}l${-3 * k} ${-3 * k}Z`} fill={SHEET} stroke={LOSS} strokeWidth={1} />;
+  return <path d={`M${x - 2 * k} ${y - 2 * k}l${4 * k} ${4 * k}m0 ${-4 * k}l${-4 * k} ${4 * k}`} fill="none" stroke={DIM} strokeWidth={1} />;
 }
 
 /** The walkers, one costume each, drawn standing on (x, y). */
@@ -250,14 +236,40 @@ function Costume({ who, x, y, h, color, opacity = 1, halo = false }: { who: WKey
 
 // ── The figure ───────────────────────────────────────────────────────────
 
-export default function TrickOrTreat({ seed: seedProp = DEFAULT_SEED, follow: followProp = 'ratio', minute }: { seed?: number; follow?: WKey; minute?: number } = {}) {
+type FigureProps = { seed?: number; follow?: WKey; minute?: number };
+
+export default function TrickOrTreat({ seed: seedProp = DEFAULT_SEED, follow = 'ratio', minute }: FigureProps = {}) {
   const [wrapRef, w] = useContainerWidth(SSR_WIDTH);
-  const small = w < SMALL_BELOW;
-  const wide = !small;
-  // Board and race side by side only when both fit; stacked below that.
-  const size = sizeFor(w);
-  const side = size === 'side';
   const [seed, setSeed] = useState(seedProp);
+  const size = sizeFor(w);
+  return (
+    <div data-trick-or-treat="" style={{ padding: w < 480 ? '0.75rem 0.75rem 1rem' : '1rem 1.25rem 1.25rem' }}>
+      {/* Bound the stage's layout width before its CSS zoom is measured. */}
+      <style>{`
+        .fig-fit-open:has([data-trick-or-treat]) { max-width: calc(100vw - 50px); }
+      `}</style>
+      <div ref={wrapRef} style={{ width: '100%' }}>
+        <TrickOrTreatRound
+          key={`${seed}:${size}`}
+          seed={seed}
+          size={size}
+          w={w}
+          follow={follow}
+          minute={seed === seedProp ? minute : 0}
+          onNewTown={() => setSeed((sd) => (sd * 7919 + 104729) % 2147483647)}
+        />
+      </div>
+    </div>
+  );
+}
+
+// Town-dependent selections never render against a different set of house IDs.
+// A layout change starts at the paused demonstration; a new seed starts at home.
+function TrickOrTreatRound({ seed, size, w, follow: followProp, minute, onNewTown }: {
+  seed: number; size: TownSize; w: number; follow: WKey; minute?: number; onNewTown: () => void;
+}) {
+  const small = w < SMALL_BELOW;
+  const side = size === 'side';
   const town = useMemo(() => makeTown(seed, size), [seed, size]);
   const plans = useMemo(() => planAll(town), [town]);
   const n = town.houses.length;
@@ -276,26 +288,6 @@ export default function TrickOrTreat({ seed: seedProp = DEFAULT_SEED, follow: fo
   const clock = clockSt ?? Math.round(curfew * 0.45);
   const clockRef = useRef(clock);
   clockRef.current = clock;
-
-  // A new neighbourhood starts before the race. A new layout (the first
-  // measurement on a phone, a rotation) redraws the same moment: still mid-race.
-  const lastSeed = useRef(seed);
-  const firstTown = useRef(true);
-  useEffect(() => {
-    if (firstTown.current) {
-      firstTown.current = false;
-      return;
-    }
-    const fresh = lastSeed.current !== seed;
-    lastSeed.current = seed;
-    setMine([]);
-    setStep(null);
-    setRunning(false);
-    setPaused(false);
-    setReject(null);
-    setClock(fresh ? 0 : (minute ?? null));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [town]);
 
   // GO: the race the reader started is the only thing that moves.
   useEffect(() => {
@@ -374,32 +366,57 @@ export default function TrickOrTreat({ seed: seedProp = DEFAULT_SEED, follow: fo
   // ── Layout: header, then the board, then (beside or under) the race ──────
   const maxW = w - 2 * X0;
   const exactName = exact.proved ? 'EXACT' : 'BEST FOUND';
-  const name = (k: WKey) => (k === 'exact' ? exactName : wide ? LABEL[k] : SHORT[k]);
+  const name = (k: WKey) => (k === 'exact' ? exactName : SHORT[k]);
   const fState = walkAt(town, routeOf(followK), clock);
   const done = clock >= curfew - 1e-9;
 
-  const fName = wide ? LABEL[followK] : SHORT[followK];
+  const fName = name(followK);
   let title: string;
-  if (frame) title = `${fName}, DECISION ${stepC! + 1} OF ${frames.length}: ${frame.text}`;
-  else if (done)
-    title =
-      followK === 'exact'
-        ? `CURFEW: ${exactName} BROUGHT HOME ${exact.haul} CANDY, ${exact.proved ? 'PROVED THE MOST ANY ROUTE CAN GET' : 'THE BEST FOUND, NOT PROVED'}`
-        : `CURFEW: ${fName} BROUGHT HOME ${haulOf(followK)} CANDY; ${exact.proved ? 'THE MOST POSSIBLE' : 'THE BEST FOUND'} IS ${exact.haul}`;
-  else if (clock <= 0) title = `${n} HOUSES, HOME BY MINUTE ${curfew}: WHICH PLANNER BRINGS BACK THE MOST CANDY?`;
-  else {
+  if (frame) title = `${fName} · DECISION ${stepC! + 1}/${frames.length}: ${frame.text}`;
+  else if (done) title = `${fName}: ${haulOf(followK)} CANDY · ${exact.proved ? 'BEST POSSIBLE' : 'BEST FOUND'} ${exact.haul}`;
+  else if (clock <= 0) title = `${n} HOUSES · ${curfew} MINUTES TO GET HOME`;
+  else title = `${Math.floor(clock)}/${curfew} MIN · ${fName}: ${fState.haul} CANDY NOW`;
+  // Callout: the followed walker's next house in the race, the house in question at a decision, or the house under the pointer.
+  let call: { id: number; reference: string; note: string } | null = null;
+  const tName = (id: number) => TREATS[town.houses[id].treat].name;
+  if (reject != null) {
+    const h = town.houses[reject];
+    call = {
+      id: reject,
+      reference: `${streetName(town, reject)} · ${tName(reject)}`,
+      note:
+        h.value === 0
+          ? 'NOT ADDED: NO CANDY HERE'
+          : `NOT ADDED: HOME AT ${routeMinutes(town, [...mine, reject])} MIN · CURFEW ${curfew}`,
+    };
+  } else if (hover != null) {
+    const last = mine.length ? mine[mine.length - 1] : H;
+    call = {
+      id: hover,
+      reference: `${streetName(town, hover)} · ${tName(hover)} ${town.houses[hover].value}`,
+      // Hover explains the route action for the highlighted house.
+      note: mine.includes(hover)
+        ? `STOP ${mine.indexOf(hover) + 1} · CLICK TO REMOVE`
+        : `${town.D[last][hover]} MIN FROM ${mine.length ? 'LAST STOP' : 'HOME'} · CLICK TO ADD`,
+    };
+  } else if (frame && frame.consider != null) {
+    const at = frame.at < 0 ? H : frame.at;
+    const d = town.D[at][frame.consider];
+    call = { id: frame.consider, reference: `${streetName(town, frame.consider)} · ${tName(frame.consider)}`, note: `${d} MIN THERE · ${town.D[frame.consider][H]} MIN HOME` };
+  } else if (!frame && clock > 0 && !done && fState.next != null) {
     const nx = fState.next;
-    title = `MINUTE ${Math.floor(clock)} OF ${curfew}: ${fName} HAS ${fState.haul} CANDY${nx != null ? `${wide ? ' AND IS' : ','} HEADED FOR THE ${TREATS[town.houses[nx].treat].name} ON ${streetName(town, nx)}` : ' AND IS WALKING HOME'}`;
+    call = { id: nx, reference: `${tName(nx)} · ${town.houses[nx].value} CANDY`, note: `ARRIVE AT ${fState.arrive} MIN` };
   }
+
   const titleRows = wrapText(title, maxW, CH + FS * 0.02);
   let y = 4;
   const titleY = y + FS;
   y = titleY + (titleRows.length - 1) * LINE + 8;
 
   // The action row.
-  const youText = mine.length ? `YOU: ${mine.length} HOUSE${mine.length === 1 ? '' : 'S'}, HOME AT ${routeMinutes(town, mine)}` : '';
+  const youText = mine.length ? `YOU: ${mine.length} STOPS · HOME ${routeMinutes(town, mine)} MIN` : '';
   const actions: { text: string; aria: string; on: () => void; off?: boolean; plain?: boolean; hint?: boolean }[] = [
-    { text: 'NEW NEIGHBOURHOOD', aria: 'Generate a new neighbourhood', on: () => setSeed((sd) => (sd * 7919 + 104729) % 2147483647), off: running },
+    { text: 'NEW NEIGHBOURHOOD', aria: 'Generate a new neighbourhood', on: onNewTown, off: running },
     { text: running ? 'PAUSE' : paused && !done ? 'RESUME >' : 'GO >', aria: running ? 'Pause the race' : 'Race every walker to curfew', on: running ? pause : go },
   ];
   if (mine.length) {
@@ -407,6 +424,7 @@ export default function TrickOrTreat({ seed: seedProp = DEFAULT_SEED, follow: fo
     actions.push({ text: 'UNDO', aria: 'Remove your last house', on: () => (setRunning(false), setPaused(false), setMine(mine.slice(0, -1)), setReject(null), setClock(0)) });
     actions.push({ text: 'CLEAR', aria: 'Clear your route', on: () => (setRunning(false), setPaused(false), setMine([]), setReject(null), setClock(0)) });
   }
+  if (!mine.length) actions.push({ text: 'PICK HOUSES TO PLAN', aria: '', on: () => undefined, plain: true, hint: true });
   const actPos: { x: number; y: number; it: (typeof actions)[number] }[] = [];
   {
     let ax = X0;
@@ -423,10 +441,10 @@ export default function TrickOrTreat({ seed: seedProp = DEFAULT_SEED, follow: fo
     y = ay + 8;
   }
 
-  // The encoding line: the porch light is the treat, each tier drawn in place.
+  // The encoding line: each house carries one candy mark.
   const encItems: { treat: number | null; text: string }[] = side
     ? [
-        { treat: null, text: 'ONE PORCH LIGHT PER HOUSE, ITS TREAT:' },
+        { treat: null, text: 'CANDY AT EACH HOUSE:' },
         { treat: 0, text: 'FULL-SIZE BAR 10' },
         { treat: 1, text: 'FUN-SIZE 5' },
         { treat: 2, text: 'LOLLIPOP 3' },
@@ -434,7 +452,7 @@ export default function TrickOrTreat({ seed: seedProp = DEFAULT_SEED, follow: fo
         { treat: 4, text: 'OFF: TOOTHBRUSH 0' },
       ]
     : [
-        { treat: null, text: 'PORCH LIGHT:' },
+        { treat: null, text: 'CANDY:' },
         { treat: 0, text: 'BAR 10' },
         { treat: 1, text: 'FUN 5' },
         { treat: 2, text: 'LOLLY 3' },
@@ -458,20 +476,31 @@ export default function TrickOrTreat({ seed: seedProp = DEFAULT_SEED, follow: fo
   }
   y += side ? 10 : 6;
 
-  // The board: isometric, scaled to the room it has.
-  const groundPts = [...town.pts, ...town.houses.map((h) => h.lot), town.home.lot];
-  const uMin = Math.min(...groundPts.map((p) => p.x - p.y)) - 0.6;
-  const uMax = Math.max(...groundPts.map((p) => p.x - p.y)) + 0.6;
-  const vMin = Math.min(...groundPts.map((p) => p.x + p.y)) - 0.6;
-  const vMax = Math.max(...groundPts.map((p) => p.x + p.y)) + 0.6;
-  // The race needs ~500px beside the board; the board takes everything else, as tall as the budget allows.
+  // Fit the display placement, including roof clearance, without changing the town.
   const boardRoom = side ? maxW - 520 : maxW;
-  const hFrac = 0.36 + 0.36 + 0.05;
-  const s = Math.min(S_MAX, boardRoom / ((uMax - uMin) * SQ3), (BOARD_MAX_H[size] - 14) / ((vMax - vMin) * 0.5 + hFrac));
+  const geometry = useMemo(() => {
+    let scale = S_MAX;
+    let result;
+    for (let pass = 0; pass < 8; pass++) {
+      const lots = layoutHouses(town, scale);
+      const points = [...town.pts, ...lots.houses, lots.home];
+      const uMin = Math.min(...points.map((p) => p.x - p.y)) - 0.6;
+      const uMax = Math.max(...points.map((p) => p.x - p.y)) + 0.6;
+      const vMin = Math.min(...points.map((p) => p.x + p.y)) - 0.6;
+      const vMax = Math.max(...points.map((p) => p.x + p.y)) + 0.6;
+      const fit = Math.min(S_MAX, boardRoom / ((uMax - uMin) * SQ3), (BOARD_MAX_H[size] - 14) / ((vMax - vMin) * 0.5 + WALL_HEIGHT + ROOF_HEIGHT + 0.05));
+      result = { lots, uMin, uMax, vMin, vMax, s: Math.min(scale, fit) };
+      if (fit >= scale) break;
+      scale = fit * 0.95;
+    }
+    return result!;
+  }, [town, boardRoom, size]);
+  const { lots, uMin, uMax, vMin, vMax, s } = geometry;
+  const drawLot = (h: { id?: number }) => h.id == null || h.id === H ? lots.home : lots.houses[h.id];
   const cx = s * SQ3;
   const cy = s * 0.5;
-  const wallZ = s * 0.36;
-  const roofZ = s * 0.36;
+  const wallZ = s * WALL_HEIGHT;
+  const roofZ = s * ROOF_HEIGHT;
   const boardW = (uMax - uMin) * cx;
   const boardTop = y;
   const headroom = wallZ + roofZ + s * 0.05 + 14;
@@ -483,16 +512,23 @@ export default function TrickOrTreat({ seed: seedProp = DEFAULT_SEED, follow: fo
   // write the same attribute even when their trig differs in the last bit.
   const proj = (g: Pt, z = 0): Pt => ({ x: r2(offX + (g.x - g.y) * cx), y: r2(offY + (g.x + g.y) * cy - z) });
   // HOME is lettered under its house, so the board runs down to it.
-  const homeLabelY = proj(town.home.lot).y + FS + (small ? 10 : 14);
+  const homeLabelY = proj(lots.home).y + FS + (small ? 10 : 14);
   const boardBottom = Math.max(boardTop + boardH, homeLabelY + 4);
 
   // The race: candy against minutes, curfew at the right, the finish ticks on it.
-  const labelW = Math.max(...walkers.map((k) => name(k).length + 10)) * CH + 16;
+  const labelW = Math.max(...walkers.map((k) => name(k).length)) * CH + 48;
   const chartX = side ? boardLeft + boardW + 36 : X0 + 28;
   const chartRight = w - X0;
   const plotX0 = chartX;
   const plotX1 = chartRight - labelW - 14;
-  const chartTop = side ? boardTop + 26 : boardBottom + 30;
+  const readoutW = side ? boardW : maxW;
+  const readoutRows = call ? [
+    ...wrapText(call.reference, readoutW, CH).map((text) => ({ text, heading: true })),
+    ...wrapText(call.note, readoutW, CH).map((text) => ({ text, heading: false })),
+  ] : [];
+  const readoutY = boardBottom + LINE;
+  const readoutH = Math.max(2, readoutRows.length) * LINE + 12;
+  const chartTop = side ? boardTop + 26 : boardBottom + readoutH + 30;
   const plotY0 = chartTop;
   const plotY1 = side ? Math.max(plotY0 + 220, boardBottom - 70) : plotY0 + (size === 'compact' ? 92 : 104);
   const vTop = Math.max(10, Math.ceil((Math.max(...walkers.map(haulOf), exact.haul) * 1.08) / 10) * 10);
@@ -503,16 +539,12 @@ export default function TrickOrTreat({ seed: seedProp = DEFAULT_SEED, follow: fo
   const cap = EXACT_NODE_CAP.toLocaleString('en-US');
   const tried = (exact.tried ?? 0).toLocaleString('en-US');
   const exactNote = exact.proved
-    ? side
-      ? `EXACT CHECKED ${tried} PARTIAL ROUTES (CAP ${cap}): NO ROUTE HOME BY CURFEW BEATS ${exact.haul}.`
-      : wide
-        ? `EXACT PROVED ${exact.haul} IS THE MOST IN ${tried} ROUTES (CAP ${cap})`
-        : `EXACT PROVED ${exact.haul} IS THE MOST (${tried} ROUTES)`
-    : `EXACT HIT ITS CAP (${exact.stopped}): ${exact.haul} IS THE BEST FOUND, NOT PROVED.`;
+    ? `BEST POSSIBLE: ${exact.haul} CANDY · ${tried} ROUTES CHECKED`
+    : `BEST FOUND: ${exact.haul} CANDY · CAP ${cap}, NOT PROVED`;
   const noteW = chartRight - X0 - (side ? chartX - X0 : 0);
   const noteRows = wrapText(exactNote, noteW, CH);
   const noteY = stepRowY + LINE + 8;
-  const sheetH = Math.max(boardBottom + 6, noteY + (noteRows.length - 1) * LINE + 10);
+  const sheetH = Math.max(boardBottom + readoutH + 6, noteY + (noteRows.length - 1) * LINE + 10);
 
   // ── The followed walker's state for the board ─────────────────────────
   // Stepping a decision moves the walker to where it stood; the change tweens.
@@ -522,26 +554,24 @@ export default function TrickOrTreat({ seed: seedProp = DEFAULT_SEED, follow: fo
 
   // How much a ground direction faces the reader (the bottom of the sheet).
   const view = (v: Pt) => (v.x + v.y) * Math.SQRT1_2;
-  // The porch light is always on show. When the street-side wall faces the
-  // reader it hangs on that wall beside the door; when the house turns its
-  // back, it stands on a post at the front corner, on the side the reader
-  // can see, so it never sits on a hidden wall.
-  const lampGeo = (id: number): { lamp: Pt; foot: Pt | null } => {
-    const h = id === H ? { lot: town.home.lot, nrm: town.home.nrm, tan: town.home.tan } : town.houses[id];
-    const g = (dn: number, dt: number) => ({ x: h.lot.x + h.nrm.x * dn + h.tan.x * dt, y: h.lot.y + h.nrm.y * dn + h.tan.y * dt });
-    if (view(h.nrm) < -0.15) return { lamp: proj(g(-(HOUSE_B + 0.04), HOUSE_A * 0.55), wallZ * 0.6), foot: null };
-    const ts = view(h.tan) >= 0 ? 1 : -1;
-    const at = g(-HOUSE_B * 0.85, ts * (HOUSE_A + 0.2));
-    return { lamp: proj(at, wallZ * 0.95), foot: proj(at) };
+  // The mark sits on a visible wall of its own house, never on a detached post.
+  const lampPt = (id: number): Pt => {
+    const h = town.houses[id];
+    const lot = drawLot(h);
+    const faces = [
+      { v: h.nrm, d: HOUSE_B }, { v: { x: -h.nrm.x, y: -h.nrm.y }, d: HOUSE_B },
+      { v: h.tan, d: HOUSE_A }, { v: { x: -h.tan.x, y: -h.tan.y }, d: HOUSE_A },
+    ];
+    const face = faces.sort((a, b) => view(b.v) - view(a.v))[0];
+    return proj({ x: lot.x + face.v.x * face.d, y: lot.y + face.v.y * face.d }, wallZ * 0.45);
   };
-  const lampPt = (id: number) => lampGeo(id).lamp;
   const pathD = (pts: Pt[]) => pts.map((p, i) => `${i ? 'L' : 'M'}${p.x.toFixed(1)} ${p.y.toFixed(1)}`).join('');
   const gPath = (pts: Pt[]) => pathD(pts.map((p) => proj(p)));
 
   // A box with a gable roof. The ridge runs along whichever house axis
   // points more toward the reader, so a gable end (the pentagon that says
   // "house") is always on show; a ridge seen side-on would leave a plain box.
-  const houseShape = (lot: Pt, tan: Pt, nrm: Pt, key: string, home = false) => {
+  const houseShape = (lot: Pt, tan: Pt, nrm: Pt, key: string, home = false, selected = false) => {
     const a = HOUSE_A * (home ? 1.15 : 1);
     const b = HOUSE_B * (home ? 1.15 : 1);
     const hz = wallZ * (home ? 1.1 : 1);
@@ -551,7 +581,7 @@ export default function TrickOrTreat({ seed: seedProp = DEFAULT_SEED, follow: fo
     const R = (k: number) => (alongTan ? proj({ x: lot.x + tan.x * a * k, y: lot.y + tan.y * a * k }, hz + roofZ) : proj({ x: lot.x + nrm.x * b * k, y: lot.y + nrm.y * b * k }, hz + roofZ));
     const toward = (v: Pt) => view(v) > 1e-6;
     const pts = (arr: Pt[]) => arr.map((p) => `${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ');
-    const common = { fill: SHEET, stroke: INK, strokeWidth: 0.9, strokeLinejoin: 'round' as const };
+    const common = { fill: SHEET, stroke: selected ? LOSS : INK, strokeWidth: selected ? 1.5 : 0.9, strokeLinejoin: 'round' as const };
     const faces: ReactNode[] = [];
     if (alongTan) {
       const front = toward(nrm) ? 1 : -1;
@@ -591,69 +621,18 @@ export default function TrickOrTreat({ seed: seedProp = DEFAULT_SEED, follow: fo
   const followPos = frame && e < 1 ? { x: lerp(fFrom.x, fTo.x, e), y: lerp(fFrom.y, fTo.y, e) } : fTo;
 
   const scaleK = small ? 0.82 : 1;
-  const walkerH = clamp(s * 0.5, 14, 18);
-  const followH = walkerH * 1.4;
+  const walkerH = clamp(s * 0.42, 11, 14);
+  const followH = walkerH;
 
-  // Bunched walkers stand side by side. Each pair closer than a walker's
-  // width is pushed apart across the sheet, the lower in the order always
-  // to the left, by the overlap; the push is continuous in their positions,
-  // so walkers sharing a street slide apart and together, never jump.
+  // Keep nearby walkers distinct without pushing a reversed pair together.
   const walkerSpot = (() => {
     const raw = walkers.map((k) => proj(k === followK ? followPos : posOf(k)));
-    const gap = walkerH * 0.78;
-    const dx = raw.map(() => 0);
-    for (let i = 0; i < raw.length; i++)
-      for (let j = i + 1; j < raw.length; j++) {
-        const d = Math.hypot(raw[i].x - raw[j].x, (raw[i].y - raw[j].y) * 0.45);
-        const push = Math.max(0, gap - d) / 2;
-        dx[i] -= push;
-        dx[j] += push;
-      }
-    const out = new Map<WKey, Pt>();
-    walkers.forEach((k, i) => out.set(k, { x: r2(raw[i].x + dx[i]), y: raw[i].y }));
-    return out;
+    const spaced = spreadWalkers(raw, walkerH * 1.1);
+    return new Map(walkers.map((k, i) => [k, { x: r2(spaced[i].x), y: spaced[i].y }]));
   })();
-  const fSpot = walkerSpot.get(followK) ?? proj(followPos);
-  const fLabelW = SHORT[followK].length * CH + 6;
-  const fLabelLeft = fSpot.x + 10 + fLabelW > (side ? boardLeft + boardW + 20 : w) - 2;
-  // What the callout must never cover: the followed walker with its name, and its next house.
-  const fBox: CalloutBox = { x: fLabelLeft ? fSpot.x - 10 - fLabelW : fSpot.x - 10, y: fSpot.y - followH - 6, w: fLabelW + 20, h: followH + 12 };
-
-  // Callout: the followed walker's next house in the race, the house in question at a decision, or the house under the pointer.
-  let call: { id: number; reference: string; note: string } | null = null;
-  const tName = (id: number) => TREATS[town.houses[id].treat].name;
-  if (reject != null) {
-    const h = town.houses[reject];
-    call = {
-      id: reject,
-      reference: `${streetName(town, reject)} · ${tName(reject)}`,
-      note:
-        h.value === 0
-          ? 'NOT ADDED: PORCH LIGHT OFF, NOBODY KNOCKS'
-          : `NOT ADDED: YOU'D BE HOME AT MINUTE ${routeMinutes(town, [...mine, reject])}, PAST THE ${curfew}-MINUTE CURFEW`,
-    };
-  } else if (hover != null) {
-    const last = mine.length ? mine[mine.length - 1] : H;
-    call = {
-      id: hover,
-      reference: `${streetName(town, hover)} · ${tName(hover)} ${town.houses[hover].value}`,
-      // The affordance lives at the mark, in answer to the pointer, not as an instruction line.
-      note: mine.includes(hover)
-        ? `YOUR STOP ${mine.indexOf(hover) + 1}; CLICK TO TAKE IT OFF YOUR ROUTE`
-        : `${town.D[last][hover]} MIN FROM ${mine.length ? 'YOUR LAST STOP' : 'HOME'}; CLICK TO ADD IT TO YOUR ROUTE`,
-    };
-  } else if (frame && frame.consider != null) {
-    const at = frame.at < 0 ? H : frame.at;
-    const d = town.D[at][frame.consider];
-    call = { id: frame.consider, reference: `${streetName(town, frame.consider)} · ${tName(frame.consider)}`, note: `${d} MIN FROM ${frame.at < 0 ? 'HOME' : 'HERE'}, ${2 * d} MIN ROUND TRIP` };
-  } else if (!frame && clock > 0 && !done && fState.next != null) {
-    const nx = fState.next;
-    call = { id: nx, reference: `${streetName(town, nx)} · ${tName(nx)}`, note: small ? `ARRIVES AT MINUTE ${fState.arrive}` : `${LABEL[followK]} ARRIVES AT MINUTE ${fState.arrive}` };
-  }
-
   // Finish labels on the curfew line, pushed apart so they never overlap.
   const finish = walkers
-    .map((k) => ({ k, v: haulOf(k), now: walkAt(town, routeOf(k), clock).haul }))
+    .map((k) => ({ k, v: haulOf(k) }))
     .sort((p, q) => q.v - p.v || WKEYS.indexOf(p.k) - WKEYS.indexOf(q.k));
   {
     let lastY = -Infinity;
@@ -685,7 +664,7 @@ export default function TrickOrTreat({ seed: seedProp = DEFAULT_SEED, follow: fo
   const raceClock = frame ? curfew : clock;
 
   const myStop = new Map(mine.map((h, i) => [h, i + 1]));
-  const houseOrder = useMemo(() => [...town.houses.map((h) => ({ id: h.id, d: h.lot.x + h.lot.y })), { id: H, d: town.home.lot.x + town.home.lot.y }].sort((p, q) => p.d - q.d), [town, H]);
+  const houseOrder = useMemo(() => [...lots.houses.map((p, id) => ({ id, d: p.x + p.y })), { id: H, d: lots.home.x + lots.home.y }].sort((p, q) => p.d - q.d), [lots, H]);
 
   // Street drawing: curbs in grey, the road in sheet.
   const streetD = town.streets.map((st) => gPath([...st.nodes.map((i) => town.pts[i]), ...(st.closed ? [town.pts[st.nodes[0]]] : [])])).join('');
@@ -696,8 +675,7 @@ export default function TrickOrTreat({ seed: seedProp = DEFAULT_SEED, follow: fo
   const ariaTitle = title;
 
   return (
-    <div style={{ padding: w < 480 ? '0.75rem 0.75rem 1rem' : '1rem 1.25rem 1.25rem' }}>
-      <div ref={wrapRef} style={{ width: '100%' }}>
+    <>
         <svg viewBox={`0 0 ${w} ${sheetH}`} width="100%" height={sheetH} style={{ display: 'block' }} role="group" aria-label={ariaTitle}>
           <style>{`
             .td-act { cursor: pointer; }
@@ -771,19 +749,28 @@ export default function TrickOrTreat({ seed: seedProp = DEFAULT_SEED, follow: fo
             </g>
           )}
 
-          {/* Houses, back to front, then the porch lights (the data). */}
-          {houseOrder.map(({ id }) => (id === H ? houseShape(town.home.lot, town.home.tan, town.home.nrm, 'home', true) : houseShape(town.houses[id].lot, town.houses[id].tan, town.houses[id].nrm, `h${id}`)))}
-          {town.houses.map((h) => {
-            const { lamp: p, foot } = lampGeo(h.id);
-            return (
-              <g key={h.id}>
-                {foot && <line x1={foot.x} y1={foot.y} x2={p.x} y2={p.y} stroke={INK} strokeWidth={1} />}
-                <Lamp x={p.x} y={p.y} treat={h.treat} k={scaleK} />
-              </g>
-            );
+          {/* Driveways connect each candy mark to its own stop on the street. */}
+          {[...town.houses, { ...town.home, id: H, doorPt: town.home.at }].map((h) => {
+            const at = proj(h.doorPt);
+            const to = proj(drawLot(h));
+            const length = Math.hypot(to.x - at.x, to.y - at.y) || 1;
+            const dx = (to.x - at.x) / length;
+            const dy = (to.y - at.y) / length;
+            const edge = 'bulb' in h && h.bulb ? 1 / Math.hypot(dx / bulbRx, dy / bulbRy) : sw / 2;
+            return <line key={`drive-${h.id}`} x1={at.x + dx * edge} y1={at.y + dy * edge} x2={to.x} y2={to.y} stroke={RULE} strokeWidth={0.8} pointerEvents="none" />;
+          })}
+          {/* Each house and its candy mark are painted together, back to front. */}
+          {houseOrder.map(({ id }) => {
+            if (id === H) return houseShape(lots.home, town.home.tan, town.home.nrm, 'home', true);
+            const h = town.houses[id];
+            const p = lampPt(id);
+            return <g key={id} data-house={id}>
+              {houseShape(drawLot(h), h.tan, h.nrm, `h${id}`, false, call?.id === id)}
+              <Lamp x={p.x} y={p.y} treat={h.treat} k={scaleK} />
+            </g>;
           })}
           {(() => {
-            const p = proj(town.home.lot);
+            const p = proj(lots.home);
             return (
               <text x={p.x} y={homeLabelY} fontFamily={MONO} fontSize={FS} fontWeight={700} fill={INK} textAnchor="middle" stroke={SHEET} strokeWidth={3} paintOrder="stroke">
                 HOME
@@ -798,13 +785,7 @@ export default function TrickOrTreat({ seed: seedProp = DEFAULT_SEED, follow: fo
               </text>
             );
           })}
-          {call &&
-            (() => {
-              const p = lampPt(call.id);
-              return <circle cx={p.x} cy={p.y} r={12 * scaleK + 2} fill="none" stroke={reject != null ? INK : LOSS} strokeWidth={1.3} />;
-            })()}
-
-          {/* Walkers: grey, the followed one bigger, in the accent, on a lit spot, and drawn last. */}
+          {/* Walkers: grey, the followed one in the accent, centered on the street and drawn last. */}
           {[...walkers.filter((k) => k !== followK), followK].map((k) => {
             const p = walkerSpot.get(k) ?? { x: 0, y: 0 };
             const on = mix.value[k];
@@ -812,36 +793,20 @@ export default function TrickOrTreat({ seed: seedProp = DEFAULT_SEED, follow: fo
             // Walkers never take a click: a house under one must still be clickable.
             return (
               <g key={k} pointerEvents="none">
-                {on > 0.01 && <ellipse cx={p.x} cy={p.y + 3} rx={hh * 0.62} ry={hh * 0.26} fill={LOSS} opacity={0.22 * on} />}
+                {on > 0.01 && <ellipse cx={p.x} cy={p.y} rx={hh * 0.62} ry={hh * 0.62} fill={LOSS} opacity={0.22 * on} />}
                 {crossfade(on, k === 'you' ? INK : SEC, LOSS).map((l) => (
                   <g key={l.on ? 'on' : 'off'}>
-                    <Costume who={k} x={p.x} y={p.y + 3} h={hh} color={SHEET} opacity={l.opacity} halo />
-                    <Costume who={k} x={p.x} y={p.y + 3} h={hh} color={l.color} opacity={l.opacity} />
+                    <Costume who={k} x={p.x} y={p.y + hh / 2} h={hh} color={SHEET} opacity={l.opacity} halo />
+                    <Costume who={k} x={p.x} y={p.y + hh / 2} h={hh} color={l.color} opacity={l.opacity} />
                   </g>
                 ))}
-                {k === followK && (
-                  <text
-                    x={fLabelLeft ? p.x - 10 : p.x + 10}
-                    y={p.y - hh * 0.55}
-                    textAnchor={fLabelLeft ? 'end' : 'start'}
-                    fontFamily={MONO}
-                    fontSize={FS}
-                    fontWeight={700}
-                    fill={LOSS}
-                    stroke={SHEET}
-                    strokeWidth={3}
-                    paintOrder="stroke"
-                    opacity={on}
-                  >
-                    {SHORT[k]}
-                  </text>
-                )}
+
               </g>
             );
           })}
 
           {/* Hit targets on the houses: click in order to plan your own route. Each
-              reaches at most halfway to the next porch light, so targets never
+              reaches at most halfway to the next candy mark, so targets never
               overlap and a click always lands on the house under the pointer. */}
           {town.houses.map((h) => {
             const p = lampPt(h.id);
@@ -871,51 +836,14 @@ export default function TrickOrTreat({ seed: seedProp = DEFAULT_SEED, follow: fo
             );
           })}
 
-          {call &&
-            (() => {
-              const p = lampPt(call.id);
-              const r = 12 * scaleK + 2;
-              const nextId = frame ? frame.consider : fState.next;
-              // Never on the followed walker or its next house; rather not on any other porch light or walker.
-              const avoid: CalloutBox[] = [fBox];
-              for (const o of town.houses) {
-                if (o.id === call.id) continue;
-                const q = lampPt(o.id);
-                avoid.push({ x: q.x - 9, y: q.y - 22, w: 18, h: 30, weight: 2 });
-              }
-              {
-                const hp = proj(town.home.lot);
-                // HOME's house and its label.
-                const top = hp.y - (wallZ + roofZ) * 1.15 - s * 0.3;
-                avoid.push({ x: hp.x - Math.max(24, s * 0.7), y: top, w: 2 * Math.max(24, s * 0.7), h: homeLabelY + 4 - top, weight: 6 });
-              }
-              for (const k of walkers) {
-                const q = walkerSpot.get(k);
-                if (q && k !== followK) avoid.push({ x: q.x - 6, y: q.y - walkerH, w: 12, h: walkerH + 4, weight: 40 });
-              }
-              if (nextId != null && nextId !== call.id) {
-                const q = lampPt(nextId);
-                avoid.push({ x: q.x - r, y: q.y - r, w: 2 * r, h: 2 * r });
-              }
-              return (
-                <MarkCallout
-                  at={p}
-                  radius={r}
-                  width={small ? Math.min(196, Math.max(...[call.reference, call.note].map((t) => t.length)) * CH + 18) : side ? 270 : 230}
-                  sheetW={side ? boardLeft + boardW + 20 : w}
-                  sheetH={boardBottom}
-                  reference={call.reference}
-                  note={call.note}
-                  avoid={avoid}
-                  top={boardTop}
-                />
-              );
-            })()}
+          <g data-map-readout="" pointerEvents="none">
+            {readoutRows.map((row, i) => <text key={i} x={X0} y={readoutY + i * LINE} fontFamily={MONO} fontSize={FS} fill={row.heading ? INK : DIM} fontWeight={row.heading ? 700 : undefined}>{row.text}</text>)}
+          </g>
 
           {/* ── The race ── */}
           <rect data-plot="" x={plotX0} y={plotY0} width={chartRight - plotX0} height={plotY1 - plotY0} fill="none" stroke="none" pointerEvents="none" />
           <text x={plotX0} y={plotY0 - 12} fontFamily={MONO} fontSize={FS} fill={DIM}>
-            CANDY
+            {frame ? 'FINAL CANDY' : 'CANDY'}
           </text>
           {[0, vTop / 2, vTop].map((v) => (
             <g key={v}>
@@ -929,19 +857,19 @@ export default function TrickOrTreat({ seed: seedProp = DEFAULT_SEED, follow: fo
             0
           </text>
           <text x={plotX1 + 14} y={belowY} fontFamily={MONO} fontSize={FS} fill={DIM}>
-            {`${small ? 'TAP' : 'CLICK'} A NAME TO FOLLOW`}
+            {`${small ? 'TAP' : 'CLICK'} A NAME`}
           </text>
           {/* The curfew line, with nothing written across it. */}
           <line x1={plotX1} x2={plotX1} y1={plotY0 - 4} y2={plotY1} stroke={INK} strokeWidth={1.2} />
-          <text x={plotX1} y={plotY0 - 12} fontFamily={MONO} fontSize={FS} fill={INK} fontWeight={700} textAnchor="middle">
-            {`HOME BY ${curfew}`}
+          <text x={plotX1 + 14} y={plotY0 - 12} fontFamily={MONO} fontSize={FS} fill={INK}>
+            FINAL HAUL
+          </text>
+          <text x={plotX1} y={belowY} textAnchor="end" fontFamily={MONO} fontSize={FS} fill={DIM}>
+            {`${curfew} MIN`}
           </text>
           {raceClock > 0 && raceClock < curfew && (
             <g>
               <line x1={xOf(raceClock)} x2={xOf(raceClock)} y1={plotY0} y2={plotY1} stroke={INK} strokeWidth={0.8} strokeDasharray="2 3" />
-              <text x={clamp(xOf(raceClock), plotX0 + 6 * CH, plotX1 - 5 * CH)} y={belowY} fontFamily={MONO} fontSize={FS} fill={INK} textAnchor="middle">
-                {`MINUTE ${Math.floor(raceClock)}`}
-              </text>
             </g>
           )}
           {walkers.map((k) => {
@@ -956,7 +884,7 @@ export default function TrickOrTreat({ seed: seedProp = DEFAULT_SEED, follow: fo
             const on = mix.value[f.k];
             const ty = yOf(f.v);
             const lx = plotX1 + 14;
-            const label = done || frame || clock <= 0 ? `${name(f.k)} ${f.v}` : `${name(f.k)} ${f.now} OF ${f.v}`;
+            const label = name(f.k);
             const live = f.k !== followK;
             const act = () => choose(f.k);
             return (
@@ -988,6 +916,9 @@ export default function TrickOrTreat({ seed: seedProp = DEFAULT_SEED, follow: fo
                     <text x={lx + 14} y={f.ly} fontFamily={MONO} fontSize={FS} fill={l.color} fontWeight={l.on ? 700 : undefined}>
                       {label}
                     </text>
+                    <text x={chartRight} y={f.ly} textAnchor="end" fontFamily={MONO} fontSize={FS} fill={l.color} fontWeight={l.on ? 700 : undefined}>
+                      {f.v}
+                    </text>
                   </g>
                 ))}
               </g>
@@ -999,8 +930,8 @@ export default function TrickOrTreat({ seed: seedProp = DEFAULT_SEED, follow: fo
             (() => {
               const items = [
                 { text: '‹ BACK', aria: 'Previous decision', on: () => setStep(Math.max(0, (stepC ?? 1) - 1)), off: stepC === 0 || running },
-                { text: stepC == null ? `STEP ${name(followK)}'S ${frames.length} DECISIONS ›` : 'NEXT ›', aria: 'Next decision', on: () => (setRunning(false), setStep(stepC == null ? 0 : Math.min(frames.length - 1, stepC + 1))), off: running || (stepC != null && stepC >= frames.length - 1) },
-                ...(stepC != null ? [{ text: 'BACK TO THE RACE', aria: 'Back to the race', on: () => setStep(null), off: false }] : []),
+                { text: stepC == null ? `STEP THROUGH ${name(followK)} ›` : 'NEXT ›', aria: 'Next decision', on: () => (setRunning(false), setStep(stepC == null ? 0 : Math.min(frames.length - 1, stepC + 1))), off: running || (stepC != null && stepC >= frames.length - 1) },
+                ...(stepC != null ? [{ text: 'RACE', aria: 'Back to the race', on: () => setStep(null), off: false }] : []),
               ].filter((it) => stepC != null || it.text !== '‹ BACK');
               let x = side ? chartX - 28 : X0;
               return items.map((it, i) => {
@@ -1024,10 +955,9 @@ export default function TrickOrTreat({ seed: seedProp = DEFAULT_SEED, follow: fo
             </text>
           ))}
         </svg>
-      </div>
       <p className="sr-only" aria-live="polite">
         {reject != null && call ? `${call.reference}: ${call.note}` : title}
       </p>
-    </div>
+    </>
   );
 }

@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { BULB_R, SETBACK, makeTown, segDist, type Town } from './TrickOrTreat.town';
-import { ALGOS, planAll, planExact, routeHaul, routeMinutes } from './TrickOrTreat.algos';
+import { ALGOS, planAll, planExact, planNearest, planRatio, routeHaul, routeMinutes } from './TrickOrTreat.algos';
 
 // Brute force, independent of the branch and bound: a DP over subsets of
 // the lit houses, the fewest minutes to visit a subset ending at each
@@ -75,6 +75,17 @@ describe('trick-or-treat: the generator', () => {
 });
 
 describe('trick-or-treat: the planners', () => {
+  it.each([
+    ['nearest', planNearest, 4],
+    ['candy per step', planRatio, 3],
+  ] as const)('%s decisions report the walk home, not a return to the previous stop', (_name, plan, there) => {
+    // On seed 78, the second stop is 6 minutes from home for both planners;
+    // it is only 4 or 3 minutes from the previous stop, respectively.
+    const decision = plan(makeTown(78, 'wide')).frames[1];
+    expect(decision.text).toContain(`${there} MIN THERE, 6 MIN HOME`);
+    expect(decision.text).not.toContain('ROUND TRIP');
+  });
+
   for (const seed of SEEDS.slice(0, 8))
     it(`exact matches brute force on a small board and bounds every heuristic, seed ${seed}`, () => {
       const t = makeTown(seed, 'compact', { houses: 11 });

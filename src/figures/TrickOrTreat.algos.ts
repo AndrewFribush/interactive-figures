@@ -118,7 +118,7 @@ function constructive(t: Town, key: 'nearest' | 'ratio'): Plan {
       route: [...route],
       at: route.length ? route[route.length - 1] : -1,
       consider: best,
-      text: `STOP ${route.length + 1}: ${streetName(t, best)}, ${2 * d} MIN ROUND TRIP, ${tname(t, best)}. ${why}`,
+      text: `STOP ${route.length + 1}: ${streetName(t, best)}, ${d} MIN THERE, ${D[best][H]} MIN HOME, ${tname(t, best)}. ${why}`,
     });
     route.push(best);
     seen.add(best);
